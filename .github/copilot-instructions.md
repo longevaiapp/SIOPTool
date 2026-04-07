@@ -8,12 +8,10 @@ Client Portal, Suppliers, SIOP Engine, Analytics + Infrastructure.
 Anyone on the team can pick up any PBI at any time.
 
 ## Stack
-Frontend:  Next.js 15 App Router, TypeScript, Tailwind CSS, shadcn/ui
-Backend:   FastAPI Python 3.11+, Pydantic v2, async/await
-Database:  Supabase PostgreSQL, Row Level Security, Supabase Auth
-AI:        Claude API claude-sonnet-4-6, JSON mode, streaming for Copilot
-Queue:     Celery + Redis for background AI jobs
-Deploy:    Vercel (frontend), Railway (backend)
+  ∙ Frontend → Next.js 15
+	∙	Backend → FastAPI (Python)
+	∙	Database → Hostinger MySQL
+	∙	Hosting → Hostinger
 
 ## Folder Structure
 /frontend
