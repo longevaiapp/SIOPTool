@@ -8,10 +8,11 @@ Client Portal, Suppliers, SIOP Engine, Analytics + Infrastructure.
 Anyone on the team can pick up any PBI at any time.
 
 ## Stack
-  ∙ Frontend → Next.js 15
-	∙	Backend → FastAPI (Python)
-	∙	Database → Hostinger MySQL
-	∙	Hosting → Hostinger
+- Frontend  → Next.js 15 App Router, TypeScript, Tailwind CSS, shadcn/ui
+- Backend   → FastAPI Python 3.11+, Pydantic v2, async/await, SQLAlchemy
+- Database  → MySQL hosted on Hostinger, accessed via SQLAlchemy ORM
+- AI        → OpenAI API gpt-4o, JSON mode, streaming for Copilot
+- Deploy    → Hostinger
 
 ## Folder Structure
 /frontend
@@ -20,7 +21,7 @@ Anyone on the team can pick up any PBI at any time.
   /app/(app)/[module]/page.tsx          ← one folder per module
   /components/shared/                   ← shared components only
   /components/[module]/                 ← module-specific components
-  /lib/ai/claude.ts                     ← ALL Claude calls go here
+  /lib/ai/openai.ts                     ← ALL OpenAI calls go here
   /lib/hooks/use-[resource].ts          ← SWR data hooks
   /lib/types/[module].ts                ← TypeScript interfaces
 
@@ -29,27 +30,30 @@ Anyone on the team can pick up any PBI at any time.
   /services/[module]_service.py         ← ALL business logic here
   /models/[module].py                   ← Pydantic models
   /tasks/[module]_tasks.py              ← Celery async tasks
-  /lib/claude_client.py                 ← Claude API wrapper
+  /migrations/                          ← numbered SQL migration files
+  /lib/openai_client.py                 ← OpenAI API wrapper
+  /lib/db.py                            ← MySQL connection (SQLAlchemy)
 
-/supabase
-  /migrations/                          ← numbered SQL migrations
-  /policies/                            ← RLS policy files
-  /seed.sql
+## Database Rules
+- All tables use VARCHAR(36) UUID primary keys
+- Every table has: created_at, updated_at, workspace_id, is_deleted, deleted_at
+- audit_log is insert-only — never update or delete
+- Soft deletes only — set is_deleted=TRUE and deleted_at=NOW()
+- Never hard delete any record
+- All queries must filter by workspace_id for tenant isolation
 
 ## Non-Negotiable Rules
 1. Business logic in service layer only — never in route handlers
-2. Every DB write inserts to audit_log (append-only, never delete/update)
-3. PHI projects: baa_confirmed=true required before status→active
-4. All Claude calls: validate output with Zod (frontend) or Pydantic (backend)
-5. AI recommends only — no Claude output auto-mutates critical records
-6. Every table: id uuid, created_at, updated_at, workspace_id
-7. Soft deletes only: deleted_at, is_deleted — never hard delete
-8. RLS on every table — workspace_id isolation mandatory
-9. Loading skeletons on every fetch — never spinners
-10. No hardcoded data anywhere — everything from API
+2. Every DB write must also insert to audit_log
+3. PHI projects: baa_confirmed must be TRUE before status = active
+4. All OpenAI calls: validate output with Zod (frontend) or Pydantic (backend) before returning
+5. AI recommends only — no AI output auto-mutates critical records
+6. Loading skeletons on every fetch — never spinners
+7. No hardcoded data anywhere — everything from API
+8. Soft deletes only — never hard delete
 
 ## Shared Components (build once, used everywhere)
-StatCard, ScoreRing, ProgressBar, PriorityBadge, 
+StatCard, ScoreRing, ProgressBar, PriorityBadge,
 ModuleHeader, StoryCard, DataTable, LoadingSkeleton
 
 ## Module Colors
