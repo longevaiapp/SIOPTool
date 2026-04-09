@@ -1,0 +1,49 @@
+:root {
+    /* ── Colours ─────────────────────────────────────────────── */
+    --ink: #080C18;
+    --ink2: #0F1525;
+    --ink3: #18213A;
+    --ink4: #1F2D4A;
+    --surface: #F4F6FA;
+    --white: #FFFFFF;
+    --text: #1A2540;
+    --muted: #5A6A8A;
+    --line: #E1E8F5;
+    --line-dk: rgba(255, 255, 255, 0.07);
+
+    --teal: #00BFA5;
+    --teal-dk: #008F7A;
+    --teal-lt: #D6F5EF;
+    --teal-glow: rgba(0, 191, 165, 0.18);
+
+    --amber: #F5A623;
+    --amber-lt: #FEF3DC;
+
+    --rose: #F0415A;
+    --rose-lt: #FEE8EC;
+
+    --violet: #7C5CFC;
+    --violet-lt: #EEE9FF;
+
+    --blue: #2563EB;
+    --blue-lt: #DBEAFE;
+
+    --sage: #2A7A5A;
+    --sage-lt: #D4EDDD;
+
+    /* ── Typography ──────────────────────────────────────────── */
+    --f-display: 'Fraunces', serif;
+    --f-ui: 'Geist', sans-serif;
+    --f-mono: 'Geist Mono', monospace;
+
+    /* ── Layout ──────────────────────────────────────────────── */
+    --sidebar-w: 248px;
+    --topbar-h: 58px;
+    --radius: 14px;
+    --radius-sm: 9px;
+
+    /* ── Shadows ─────────────────────────────────────────────── */
+    --shadow-sm: 0 1px 4px rgba(8, 12, 24, 0.08);
+    --shadow: 0 4px 20px rgba(8, 12, 24, 0.10);
+    --shadow-lg: 0 12px 40px rgba(8, 12, 24, 0.14);
+}

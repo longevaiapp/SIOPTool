@@ -1,46 +1,51 @@
 import { cn } from "@/lib/utils";
-import { LoadingSkeleton } from "./LoadingSkeleton";
+
+type StatCardColor = "teal" | "amber" | "rose" | "default";
 
 interface StatCardProps {
-    title: string;
     value: string | number;
-    description?: string;
-    accentColor?: string;
-    isLoading?: boolean;
-    className?: string;
+    label: string;
+    delta?: string;
+    color?: StatCardColor;
 }
 
-export function StatCard({
-    title,
-    value,
-    description,
-    accentColor,
-    isLoading,
-    className,
-}: StatCardProps) {
-    if (isLoading) {
-        return <LoadingSkeleton className={cn("h-28", className)} />;
-    }
+const colorMap: Record<
+    StatCardColor,
+    { border: string; barFill: string; valColor: string }
+> = {
+    teal: { border: "border-[var(--teal)]", barFill: "bg-[var(--teal)]", valColor: "text-[var(--teal-dk)]" },
+    amber: { border: "border-[var(--amber)]", barFill: "bg-[var(--amber)]", valColor: "text-[var(--amber)]" },
+    rose: { border: "border-[var(--rose)]", barFill: "bg-[var(--rose)]", valColor: "text-[var(--rose)]" },
+    default: { border: "border-[var(--line)]", barFill: "bg-[var(--muted)]", valColor: "text-[var(--ink)]" },
+};
+
+export function StatCard({ value, label, delta, color = "default" }: StatCardProps) {
+    const { border, barFill, valColor } = colorMap[color];
 
     return (
         <div
             className={cn(
-                "rounded-lg border border-gray-200 bg-white p-6 shadow-sm",
-                className
+                "flex flex-col gap-2 rounded-[var(--radius)] border-2 bg-[var(--white)] p-4",
+                "shadow-[var(--shadow-sm)] transition-shadow hover:shadow-[var(--shadow)]",
+                border,
             )}
         >
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">
-                {title}
+            <p className="text-[10.5px] font-semibold uppercase tracking-[.8px] text-[var(--muted)]">
+                {label}
             </p>
-            <p
-                className="text-3xl font-bold text-gray-900"
-                style={accentColor ? { color: accentColor } : undefined}
-            >
+
+            <p className={cn("font-['Fraunces',serif] text-[28px] font-bold leading-none", valColor)}>
                 {value}
             </p>
-            {description && (
-                <p className="mt-1 text-sm text-gray-500">{description}</p>
+
+            {delta && (
+                <p className="text-[10.5px] text-[var(--muted)]">{delta}</p>
             )}
+
+            {/* decorative bottom bar */}
+            <div className="mt-1 h-[3px] overflow-hidden rounded-full bg-[var(--line)]">
+                <div className={cn("h-full w-full rounded-full", barFill)} />
+            </div>
         </div>
     );
 }
