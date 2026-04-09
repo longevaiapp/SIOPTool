@@ -89,28 +89,49 @@ function Topbar({ moduleName }: { moduleName: string }) {
 function Sidebar() {
     const pathname = usePathname();
 
-    const navLink = (href: string, icon: string, label: string, badge?: string | null) => {
-        const isActive = pathname === href || (href !== "/overview" && pathname.startsWith(href));
+    const navLink = (
+        href: string,
+        icon: string,
+        label: string,
+        badge?: string | null,
+        color?: string,
+        num?: string,
+    ) => {
+        const isActive = pathname === href || pathname.startsWith(href + "/");
+        const accent = color ?? "var(--teal)";
         return (
             <Link
                 key={href}
                 href={href}
                 className={cn(
-                    "relative mb-px flex items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-[7px]",
+                    "relative mb-px flex items-center gap-2 rounded-[var(--radius-sm)] px-2.5 py-[7px]",
                     "text-[12px] font-medium transition-all duration-150 select-none",
-                    isActive
-                        ? "border border-[rgba(0,191,165,.15)] bg-[rgba(0,191,165,.1)] text-[var(--teal)]"
-                        : "border border-transparent text-[rgba(255,255,255,.38)] hover:bg-[rgba(255,255,255,.06)] hover:text-[rgba(255,255,255,.75)]"
+                    !isActive && "border border-transparent text-[rgba(255,255,255,.38)] hover:bg-[rgba(255,255,255,.06)] hover:text-[rgba(255,255,255,.75)]",
                 )}
+                style={isActive ? {
+                    border: `1px solid ${accent}28`,
+                    background: `${accent}18`,
+                    color: accent,
+                } : undefined}
             >
                 {isActive && (
                     <span
-                        style={{ background: "var(--teal)", boxShadow: "0 0 8px var(--teal)" }}
+                        style={{ background: accent, boxShadow: `0 0 8px ${accent}` }}
                         className="absolute bottom-[20%] left-0 top-[20%] w-0.5 rounded-r-sm"
                     />
                 )}
                 <span className="w-4 flex-shrink-0 text-center text-[14px]">{icon}</span>
-                <span className="flex-1">{label}</span>
+                {num && (
+                    <span style={{
+                        fontFamily: "var(--f-mono)",
+                        fontSize: 8.5,
+                        fontWeight: 700,
+                        letterSpacing: ".3px",
+                        flexShrink: 0,
+                        color: isActive ? accent : "rgba(255,255,255,.18)",
+                    }}>{num}</span>
+                )}
+                <span className="flex-1 truncate">{label}</span>
                 {badge && (
                     <span style={{ background: badge === "Live" ? "var(--teal)" : "var(--rose)", color: badge === "Live" ? "var(--ink)" : "var(--white)" }}
                         className="rounded-[10px] px-1.5 py-px text-[9px] font-bold">
@@ -150,7 +171,7 @@ function Sidebar() {
                     Modules
                 </span>
                 <nav className="px-3">
-                    {modules.map((mod) => navLink(mod.href, mod.icon, mod.name))}
+                    {modules.map((mod) => navLink(mod.href, mod.icon, mod.name, null, mod.color, mod.num))}
                 </nav>
             </div>
 
@@ -188,7 +209,7 @@ function Sidebar() {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const allNav = [...systemViews, ...modules];
-    const active = allNav.find((m) => pathname === m.href || (m.href !== "/overview" && pathname.startsWith(m.href)));
+    const active = allNav.find((m) => pathname === m.href || pathname.startsWith(m.href + "/"));
 
     return (
         <div style={{ background: "var(--ink)" }} className="flex h-screen flex-col overflow-hidden">

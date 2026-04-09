@@ -16,7 +16,7 @@ export default function ClientPortalPage() {
     return (
         <div style={{ padding: "28px 32px 60px", background: "var(--surface)", minHeight: "100vh" }}>
             <div style={{ marginBottom: 26 }}>
-                <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "2px", color: "#d97706", marginBottom: 6 }}>M-04 · Client Experience</div>
+                <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "2px", color: "#d97706", marginBottom: 6 }}>M-07 · Client Experience</div>
                 <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
                     <div>
                         <h1 style={{ fontFamily: "var(--f-display)", fontSize: 32, fontWeight: 900, color: "var(--ink)", margin: 0 }}>

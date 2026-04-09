@@ -19,7 +19,7 @@ export default function SuppliersPage() {
     return (
         <div style={{ padding: "28px 32px 60px", background: "var(--surface)", minHeight: "100vh" }}>
             <div style={{ marginBottom: 26 }}>
-                <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "2px", color: "#4f46e5", marginBottom: 6 }}>M-09 · Partners Network</div>
+                <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "2px", color: "#4f46e5", marginBottom: 6 }}>M-08 · Partners Network</div>
                 <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
                     <div>
                         <h1 style={{ fontFamily: "var(--f-display)", fontSize: 32, fontWeight: 900, color: "var(--ink)", margin: 0 }}>
