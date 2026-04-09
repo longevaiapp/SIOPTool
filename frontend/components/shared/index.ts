@@ -3,6 +3,8 @@ export { ScoreRing } from "./ScoreRing";
 export { ProgressBar } from "./ProgressBar";
 export { PriorityBadge } from "./PriorityBadge";
 export { DepartmentBadge } from "./DepartmentBadge";
+export { TagBadge } from "./TagBadge";
+export type { TagBadgeColor, TagBadgeSize } from "./TagBadge";
 export { DataTable } from "./DataTable";
 export type { TableColumn } from "./DataTable";
 export { ModuleHeader } from "./ModuleHeader";
