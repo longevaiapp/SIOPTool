@@ -1,51 +1,57 @@
 import { cn } from "@/lib/utils";
 
-type StatCardColor = "teal" | "amber" | "rose" | "default";
+type StatCardColor = "teal" | "amber" | "rose" | "blue" | "violet" | "default";
 
 interface StatCardProps {
     value: string | number;
     label: string;
     delta?: string;
     color?: StatCardColor;
+    icon?: React.ReactNode;
 }
 
-const colorMap: Record<
-    StatCardColor,
-    { border: string; barFill: string; valColor: string }
-> = {
-    teal: { border: "border-[var(--teal)]", barFill: "bg-[var(--teal)]", valColor: "text-[var(--teal-dk)]" },
-    amber: { border: "border-[var(--amber)]", barFill: "bg-[var(--amber)]", valColor: "text-[var(--amber)]" },
-    rose: { border: "border-[var(--rose)]", barFill: "bg-[var(--rose)]", valColor: "text-[var(--rose)]" },
-    default: { border: "border-[var(--line)]", barFill: "bg-[var(--muted)]", valColor: "text-[var(--ink)]" },
+const colorMap: Record<StatCardColor, string> = {
+    teal: "#30d158",
+    amber: "#ff9f0a",
+    rose: "#ff453a",
+    blue: "#0a84ff",
+    violet: "#bf5af2",
+    default: "#1d1d1f",
 };
 
-export function StatCard({ value, label, delta, color = "default" }: StatCardProps) {
-    const { border, barFill, valColor } = colorMap[color];
+export function StatCard({ value, label, delta, color = "default", icon }: StatCardProps) {
+    const accentColor = colorMap[color];
 
     return (
-        <div
-            className={cn(
-                "flex flex-col gap-2 rounded-[var(--radius)] border-2 bg-[var(--white)] p-4",
-                "shadow-[var(--shadow-sm)] transition-shadow hover:shadow-[var(--shadow)]",
-                border,
-            )}
-        >
-            <p className="text-[10.5px] font-semibold uppercase tracking-[.8px] text-[var(--muted)]">
-                {label}
-            </p>
+        <div className="glass-card p-5 transition-all hover:scale-[1.01]">
+            <div className="mb-2 flex items-center justify-between">
+                <p className="text-[12px] font-medium text-[#86868b]">
+                    {label}
+                </p>
+                {icon && (
+                    <span className="text-[16px] opacity-60">{icon}</span>
+                )}
+            </div>
 
-            <p className={cn("font-['Fraunces',serif] text-[28px] font-bold leading-none", valColor)}>
+            <p 
+                className="mb-1 text-[32px] font-bold tracking-tight"
+                style={{ color: accentColor }}
+            >
                 {value}
             </p>
 
             {delta && (
-                <p className="text-[10.5px] text-[var(--muted)]">{delta}</p>
+                <p className={cn(
+                    "text-[12px] font-medium",
+                    delta.startsWith("+") || delta.startsWith("▲") 
+                        ? "text-[#30d158]" 
+                        : delta.startsWith("-") || delta.startsWith("▼")
+                        ? "text-[#ff453a]"
+                        : "text-[#86868b]"
+                )}>
+                    {delta}
+                </p>
             )}
-
-            {/* decorative bottom bar */}
-            <div className="mt-1 h-[3px] overflow-hidden rounded-full bg-[var(--line)]">
-                <div className={cn("h-full w-full rounded-full", barFill)} />
-            </div>
         </div>
     );
 }

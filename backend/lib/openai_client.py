@@ -26,21 +26,29 @@ def call_openai(
     response_model: Type[T],
     model: str = "gpt-4o",
     temperature: float = 0.3,
+    seed: int | None = None,
 ) -> T:
     """
     Call OpenAI and validate the response with a Pydantic model.
 
     IMPORTANT: AI recommends only — the caller must confirm before mutating
     any critical records (rule #5 in project rules).
+
+    `seed`: when set with temperature=0, OpenAI returns near-deterministic
+    output (same input → same output, best-effort).
     """
     client = get_openai_client()
 
-    response = client.chat.completions.create(
-        model=model,
-        temperature=temperature,
-        messages=[{"role": "user", "content": prompt}],
-        response_format={"type": "json_object"},
-    )
+    kwargs: dict = {
+        "model": model,
+        "temperature": temperature,
+        "messages": [{"role": "user", "content": prompt}],
+        "response_format": {"type": "json_object"},
+    }
+    if seed is not None:
+        kwargs["seed"] = seed
+
+    response = client.chat.completions.create(**kwargs)
 
     content = response.choices[0].message.content
     if not content:

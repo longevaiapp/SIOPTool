@@ -1,94 +1,238 @@
 "use client";
 
-const CLIENTS = [
-    { name: "LabCore Diagnostics", tier: "Enterprise", score: 91, nps: 72, arr: "$384K", renewal: "Dec 2026", signals: ["Upsell ready", "High engagement"], t: "teal" as const },
-    { name: "Hospita Group", tier: "Enterprise", score: 63, nps: 41, arr: "$504K", renewal: "Aug 2026", signals: ["Delivery delay", "Approval slowdown"], t: "amber" as const },
-    { name: "HealthRx Corp", tier: "Mid-Market", score: 78, nps: 58, arr: "$114K", renewal: "Feb 2027", signals: [], t: "teal" as const },
-    { name: "Amatista Internal", tier: "Internal", score: 55, nps: 30, arr: "$216K", renewal: "Rolling", signals: ["Budget strained"], t: "rose" as const },
-    { name: "GenomicsCo", tier: "Growth", score: 84, nps: 65, arr: "$612K", renewal: "Oct 2026", signals: ["Expansion signal"], t: "teal" as const },
-    { name: "CliniFlow", tier: "Mid-Market", score: 76, nps: 52, arr: "$162K", renewal: "Jan 2027", signals: [], t: "teal" as const },
-];
+import Link from "next/link";
+import { useMemo } from "react";
+import { useClients } from "@/lib/hooks/use-resources";
+import { useListFilters, filterAndSort } from "@/components/shared/ListFilters";
+import { LoadingSkeleton } from "@/components/shared";
+import { useRouter } from "next/navigation";
+import { useT } from "@/lib/i18n";
 
-type StatusType = "teal" | "amber" | "rose";
-const STATUS_DOT: Record<StatusType, string> = { teal: "#10B981", amber: "#F59E0B", rose: "#F43F5E" };
+/* ═══ Customer Health ═══ */
 
-function Ring({ score }: { score: number }) {
-    const size = 44; const r = 16; const circ = 2 * Math.PI * r;
-    const color = score >= 80 ? "var(--teal)" : score >= 65 ? "var(--amber)" : "var(--rose)";
+const TIER_FROM_ARR = (arr: number): "platinum" | "gold" | "silver" | "bronze" => {
+    if (arr >= 750000) return "platinum";
+    if (arr >= 300000) return "gold";
+    if (arr >= 100000) return "silver";
+    return "bronze";
+};
+
+const TIER_LABELS = (t: (k: string) => string): Record<string, string> => ({ platinum: t("health.tier_platinum"), gold: t("health.tier_gold"), silver: t("health.tier_silver"), bronze: t("health.tier_bronze") });
+
+const TIER_STYLES: Record<string, { bg: string; text: string }> = {
+    Platinum: { bg: "rgba(191, 90, 242, 0.12)", text: "#8944ab" },
+    Gold: { bg: "rgba(255, 159, 10, 0.12)", text: "#c93400" },
+    Silver: { bg: "rgba(0, 122, 255, 0.12)", text: "#0040dd" },
+    Bronze: { bg: "rgba(142, 142, 147, 0.12)", text: "#636366" },
+};
+const TIER_STYLES_BY_KEY: Record<string, { bg: string; text: string }> = {
+    platinum: { bg: "rgba(191, 90, 242, 0.12)", text: "#8944ab" },
+    gold: { bg: "rgba(255, 159, 10, 0.12)", text: "#c93400" },
+    silver: { bg: "rgba(0, 122, 255, 0.12)", text: "#0040dd" },
+    bronze: { bg: "rgba(142, 142, 147, 0.12)", text: "#636366" },
+};
+
+const TREND_ICONS: Record<string, { icon: string; color: string }> = {
+    up: { icon: "↑", color: "#30d158" },
+    stable: { icon: "→", color: "#8e8e93" },
+    down: { icon: "↓", color: "#ff453a" },
+};
+
+function HealthScore({ score }: { score: number }) {
+    const color = score >= 80 ? "#30d158" : score >= 60 ? "#ff9f0a" : "#ff453a";
     return (
-        <div style={{ position: "relative", width: size, height: size }}>
-            <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-                <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--line)" strokeWidth={3} />
-                <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={3}
-                    strokeDasharray={circ} strokeDashoffset={circ * (1 - score / 100)} strokeLinecap="round" />
-            </svg>
-            <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color, fontFamily: "var(--f-mono)" }}>{score}</span>
+        <div className="flex items-center gap-2">
+            <div
+                className="flex h-8 w-8 items-center justify-center rounded-full text-[12px] font-bold"
+                style={{ background: `${color}20`, color }}
+            >
+                {score}
+            </div>
+        </div>
+    );
+}
+
+function UsageBar({ usage }: { usage: number }) {
+    const color = usage >= 80 ? "#30d158" : usage >= 50 ? "#ff9f0a" : "#ff453a";
+    return (
+        <div className="flex items-center gap-2">
+            <div className="h-1.5 w-16 overflow-hidden rounded-full bg-black/5">
+                <div
+                    className="h-full rounded-full transition-all"
+                    style={{ width: `${usage}%`, background: color }}
+                />
+            </div>
+            <span className="text-[11px] text-[#636366]">{usage}%</span>
         </div>
     );
 }
 
 export default function CustomerHealthPage() {
+    const t = useT();
+    const { data: clientsData, isLoading } = useClients();
+    const router = useRouter();
+
+    const CUSTOMERS = useMemo(() => {
+        const tierLabels = TIER_LABELS(t);
+        return (clientsData ?? []).map(c => {
+        const arr = Number(c.arr ?? 0);
+        const health = Number(c.health_score ?? 0);
+        const nps = Number(c.nps ?? 0);
+        const tierKey = TIER_FROM_ARR(arr);
+        return {
+            id: c.id,
+            name: c.name,
+            tier: tierLabels[tierKey],
+            tierKey,
+            health,
+            nps,
+            usage: Math.min(100, Math.max(0, Math.round((health + nps) / 2))),
+            contracts: 1,
+            mrr: arr > 0 ? `$${Math.round(arr / 12 / 1000)}K` : "—",
+            arr,
+            trend: health >= 80 ? "up" : health >= 60 ? "stable" : "down",
+            lastContact: "—",
+        };
+        });
+    }, [clientsData, t]);
+
+    const avgHealth = CUSTOMERS.length ? Math.round(CUSTOMERS.reduce((s, c) => s + c.health, 0) / CUSTOMERS.length) : 0;
+    const avgNps = CUSTOMERS.length ? Math.round(CUSTOMERS.reduce((s, c) => s + c.nps, 0) / CUSTOMERS.length) : 0;
+    const atRisk = CUSTOMERS.filter(c => c.health < 60).length;
+    const KPI_CARDS = [
+        { label: t("health.kpi_avg"), value: String(avgHealth), delta: t("health.accounts_count", { n: CUSTOMERS.length }), positive: avgHealth >= 70 },
+        { label: t("health.kpi_risk"), value: String(atRisk), delta: atRisk === 0 ? t("health.all_healthy") : t("health.needs_attention"), positive: atRisk === 0 },
+        { label: t("health.kpi_nps"), value: avgNps >= 0 ? `+${avgNps}` : String(avgNps), delta: t("health.weighted"), positive: avgNps >= 30 },
+        { label: t("health.kpi_strategic"), value: String(CUSTOMERS.filter(c => c.tierKey === "platinum" || c.tierKey === "gold").length), delta: t("health.platinum_gold"), positive: true },
+    ];
+    const filters = useListFilters({
+        searchPlaceholder: t("health.search_ph"),
+        statusOptions: Object.keys(TIER_LABELS(t)).map(k => ({ value: k, label: TIER_LABELS(t)[k] })),
+        sortOptions: [
+            { value: "health_desc", label: t("health.sort_health") },
+            { value: "arr_desc", label: t("health.sort_arr") },
+            { value: "nps_desc", label: t("health.sort_nps") },
+        ],
+    });
+    const filtered = filterAndSort(CUSTOMERS, filters, {
+        searchFields: ["name"],
+        statusField: "tierKey",
+        sorters: {
+            health_desc: (a, b) => b.health - a.health,
+            arr_desc: (a, b) => b.arr - a.arr,
+            nps_desc: (a, b) => b.nps - a.nps,
+        },
+    });
     return (
-        <div style={{ padding: "28px 32px 60px", background: "var(--surface)", minHeight: "100vh" }}>
-            <div style={{ marginBottom: 26 }}>
-                <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "2px", color: "#e11d48", marginBottom: 6 }}>M-06 · Client Success</div>
-                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
+        <div className="p-6">
+            {/* Header */}
+            <header className="mb-6">
+                <p className="mb-1 text-[11px] font-semibold uppercase tracking-[2px] text-[#ff2d55]">
+                    {t("health.module_tag")}
+                </p>
+                <div className="flex items-end justify-between">
                     <div>
-                        <h1 style={{ fontFamily: "var(--f-display)", fontSize: 32, fontWeight: 900, color: "var(--ink)", margin: 0 }}>
-                            Customer <em style={{ color: "#e11d48", fontStyle: "normal" }}>Health</em>
+                        <h1 className="text-[28px] font-bold tracking-tight text-[#1d1d1f]">
+                            {t("health.title")}
                         </h1>
-                        <p style={{ fontSize: 12.5, color: "var(--muted)", margin: "5px 0 0" }}>AI health scoring · NPS tracking · Churn prediction · Upsell signals</p>
+                        <p className="mt-0.5 text-[13px] text-[#8e8e93]">
+                            {t("health.subtitle")}
+                        </p>
                     </div>
-                    <button style={{ padding: "8px 16px", borderRadius: 9, border: "none", background: "#e11d48", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✦ AI Health Summary</button>
+                    <div className="flex gap-2">
+                        <button className="btn btn--secondary">{t("page.export")}</button>
+                        <Link href="/customer-health/new" className="btn btn--primary">
+                            {t("page.new_client")}
+                        </Link>
+                    </div>
                 </div>
-            </div>
+            </header>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 24 }}>
-                {[
-                    { label: "Avg Health Score", value: "74.5", delta: "Target ≥ 80", warn: true },
-                    { label: "Portfolio NPS", value: "53", delta: "vs 50 target ↑", warn: false },
-                    { label: "Churn Risk", value: "1 client", delta: "Amatista — monitor", warn: true },
-                    { label: "Upsell Signals", value: "2", delta: "LabCore + GenomicsCo", warn: false },
-                ].map((k) => (
-                    <div key={k.label} style={{ background: "var(--white)", borderRadius: 14, padding: "18px 20px", border: `1px solid ${k.warn ? "var(--amber)" : "var(--line)"}`, boxShadow: "var(--shadow-sm)" }}>
-                        <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 4 }}>{k.label}</div>
-                        <div style={{ fontFamily: "var(--f-display)", fontSize: 28, fontWeight: 700, color: k.warn ? "var(--amber)" : "#e11d48", lineHeight: 1 }}>{k.value}</div>
-                        <div style={{ fontSize: 10.5, color: "var(--muted)", marginTop: 5 }}>{k.delta}</div>
+            {/* KPI Stats */}
+            <div className="mb-6 grid grid-cols-4 gap-4">
+                {KPI_CARDS.map((kpi) => (
+                    <div key={kpi.label} className="glass-stat">
+                        <p className="mb-1 text-[11px] font-medium text-[#8e8e93]">{kpi.label}</p>
+                        <p className="mb-1 text-[28px] font-bold tracking-tight text-[#1d1d1f]">{kpi.value}</p>
+                        <p className={`text-[11px] ${kpi.positive ? "text-[#30d158]" : "text-[#ff453a]"}`}>
+                            {kpi.delta}
+                        </p>
                     </div>
                 ))}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
-                {CLIENTS.map((c) => (
-                    <div key={c.name} style={{ background: "var(--white)", borderRadius: 16, border: `1.5px solid ${STATUS_DOT[c.t]}40`, overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
-                        <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--line)", display: "flex", gap: 14, alignItems: "flex-start" }}>
-                            <Ring score={c.score} />
-                            <div style={{ flex: 1 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3 }}>
-                                    <span style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)" }}>{c.name}</span>
-                                    <span style={{ background: "var(--surface)", color: "var(--muted)", fontSize: 9.5, fontWeight: 600, padding: "1px 7px", borderRadius: 6, border: "1px solid var(--line)" }}>{c.tier}</span>
-                                </div>
-                                <div style={{ display: "flex", gap: 16, fontSize: 11, color: "var(--muted)" }}>
-                                    <span>NPS: <strong style={{ color: "var(--ink)" }}>{c.nps}</strong></span>
-                                    <span>ARR: <strong style={{ color: "var(--teal-dk)" }}>{c.arr}</strong></span>
-                                    <span>Renewal: {c.renewal}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div style={{ padding: "12px 20px" }}>
-                            {c.signals.length > 0 ? (
-                                c.signals.map((sig) => (
-                                    <div key={sig} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11, color: sig.includes("Upsell") || sig.includes("Expansion") ? "var(--teal-dk)" : "var(--amber)", marginBottom: 4 }}>
-                                        <span style={{ fontSize: 9 }}>{sig.includes("Upsell") || sig.includes("Expansion") ? "🚀" : "⚠"}</span>
-                                        {sig}
-                                    </div>
-                                ))
-                            ) : (
-                                <span style={{ fontSize: 11, color: "var(--muted)" }}>No active signals</span>
-                            )}
-                        </div>
+            {filters.toolbar}
+
+            {/* Customers Table */}
+            <div className="glass-card overflow-hidden">
+                <div className="flex items-center justify-between border-b border-black/[0.04] px-5 py-4">
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-[15px] font-semibold text-[#1d1d1f]">{t("health.account_health")}</h2>
+                        <span className="rounded-full bg-[#ff2d55]/10 px-2.5 py-1 text-[11px] font-semibold text-[#ff2d55]">
+                            {t("health.accounts_total", { n: filtered.length })}
+                        </span>
                     </div>
-                ))}
+                </div>
+
+                <table className="glass-table">
+                    <thead>
+                        <tr>
+                            <th>{t("health.col_customer")}</th>
+                            <th>{t("health.col_tier")}</th>
+                            <th>{t("health.col_health")}</th>
+                            <th>{t("health.col_nps")}</th>
+                            <th>{t("health.col_usage")}</th>
+                            <th>{t("health.col_mrr")}</th>
+                            <th>{t("health.col_trend")}</th>
+                            <th>{t("health.col_last")}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {isLoading && filtered.length === 0 && (
+                            <tr><td colSpan={8} className="px-6 py-8"><LoadingSkeleton rows={4} type="text" /></td></tr>
+                        )}
+                        {!isLoading && filtered.length === 0 && (
+                            <tr><td colSpan={8} className="py-12 text-center text-[13px] text-[#8e8e93]">{t("health.empty")}</td></tr>
+                        )}
+                        {filtered.map((customer) => {
+                            const tier = TIER_STYLES_BY_KEY[customer.tierKey] ?? TIER_STYLES.Bronze;
+                            const trend = TREND_ICONS[customer.trend];
+                            return (
+                                <tr key={customer.id} className="cursor-pointer" onClick={() => router.push(`/customer-health/${customer.id}`)}>
+                                    <td>
+                                        <span className="font-semibold text-[#1d1d1f] hover:text-[#ff2d55]">
+                                            {customer.name}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span
+                                            className="inline-block rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                                            style={{ background: tier.bg, color: tier.text }}
+                                        >
+                                            {customer.tier}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <HealthScore score={customer.health} />
+                                    </td>
+                                    <td className={customer.nps >= 50 ? "text-[#30d158]" : customer.nps >= 0 ? "text-[#ff9f0a]" : "text-[#ff453a]"}>
+                                        +{customer.nps}
+                                    </td>
+                                    <td>
+                                        <UsageBar usage={customer.usage} />
+                                    </td>
+                                    <td className="font-semibold text-[#1d1d1f]">{customer.mrr}</td>
+                                    <td>
+                                        <span style={{ color: trend.color }} className="text-[14px] font-bold">
+                                            {trend.icon}
+                                        </span>
+                                    </td>
+                                    <td className="text-[#8e8e93]">{customer.lastContact}</td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
             </div>
         </div>
     );

@@ -1,87 +1,184 @@
 "use client";
 
-const CONTROLS = [
-    { id: "HIPAA-01", framework: "HIPAA", control: "PHI Data Encryption at Rest", status: "compliant" as const, owner: "CTO", last: "Jun 1", next: "Sep 1", risk: "low" as const },
-    { id: "HIPAA-02", framework: "HIPAA", control: "BAA Signed with All Vendors", status: "compliant" as const, owner: "Compliance", last: "May 15", next: "Nov 15", risk: "low" as const },
-    { id: "HIPAA-03", framework: "HIPAA", control: "Audit Log — Access Review", status: "expiring" as const, owner: "CTO", last: "Mar 1", next: "Jun 18", risk: "medium" as const },
-    { id: "FHIR-01", framework: "FHIR R4", control: "Endpoint Compliance Validation", status: "compliant" as const, owner: "CTO", last: "Jun 8", next: "Sep 8", risk: "low" as const },
-    { id: "COF-01", framework: "COFEPRIS", control: "Device Registration — AI Pathology", status: "in_review" as const, owner: "Compliance", last: "Apr 10", next: "Dec 10", risk: "medium" as const },
-    { id: "GDPR-01", framework: "GDPR", control: "Data Processing Agreement — EU clients", status: "expiring" as const, owner: "Legal", last: "Dec 2023", next: "Jun 30", risk: "medium" as const },
-    { id: "NOM-01", framework: "NOM-024", control: "Clinical Data System Certification", status: "compliant" as const, owner: "Compliance", last: "Jan 15", next: "Jul 15", risk: "low" as const },
-    { id: "SEC-01", framework: "Internal", control: "Penetration Test — Annual", status: "gap" as const, owner: "CTO", last: "Jun 2023", next: "Overdue", risk: "high" as const },
-];
+import Link from "next/link";
+import { useMemo } from "react";
+import { useContracts, useClients } from "@/lib/hooks/use-resources";
+import { formatDate, formatMoney } from "@/lib/format";
+import { useListFilters, filterAndSort } from "@/components/shared/ListFilters";
+import { LoadingSkeleton } from "@/components/shared";
+import { useRouter } from "next/navigation";
+import { useT } from "@/lib/i18n";
 
-const STATUS_STYLE = {
-    compliant: { bg: "#D1FAE5", color: "#065F46", label: "Compliant" },
-    expiring: { bg: "#FEF3C7", color: "#92400E", label: "Expiring Soon" },
-    in_review: { bg: "#DBEAFE", color: "#1D4ED8", label: "In Review" },
-    gap: { bg: "#FFE4E6", color: "#9F1239", label: "Gap" },
+/* ═══ Contracts & Compliance ═══ */
+
+
+const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
+    draft: { bg: "rgba(142, 142, 147, 0.12)", text: "#636366", label: "Draft" },
+    review: { bg: "rgba(191, 90, 242, 0.12)", text: "#8944ab", label: "In Review" },
+    signed: { bg: "rgba(48, 209, 88, 0.12)", text: "#248a3d", label: "Signed" },
+    expired: { bg: "rgba(255, 69, 58, 0.12)", text: "#ff453a", label: "Expired" },
 };
-const RISK_STYLE = {
-    low: { color: "var(--teal)" },
-    medium: { color: "var(--amber)" },
-    high: { color: "var(--rose)" },
-};
+
+function ComplianceBar({ score }: { score: number }) {
+    const color = score >= 95 ? "#30d158" : score >= 80 ? "#ff9f0a" : "#ff453a";
+    return (
+        <div className="ai-score-bar">
+            <div className="ai-score-bar__track">
+                <div
+                    className="ai-score-bar__fill"
+                    style={{
+                        width: `${score}%`,
+                        background: `linear-gradient(90deg, ${color}, ${color}cc)`,
+                    }}
+                />
+            </div>
+            <span className="ai-score-bar__value" style={{ color }}>{score}%</span>
+        </div>
+    );
+}
 
 export default function ContractsPage() {
-    return (
-        <div style={{ padding: "28px 32px 60px", background: "var(--surface)", minHeight: "100vh" }}>
-            <div style={{ marginBottom: 26 }}>
-                <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "2px", color: "#7c3aed", marginBottom: 6 }}>M-03 · Compliance &amp; Risk</div>
-                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
-                    <div>
-                        <h1 style={{ fontFamily: "var(--f-display)", fontSize: 32, fontWeight: 900, color: "var(--ink)", margin: 0 }}>
-                            Compliance &amp; <em style={{ color: "#7c3aed", fontStyle: "normal" }}>Risk Center</em>
-                        </h1>
-                        <p style={{ fontSize: 12.5, color: "var(--muted)", margin: "5px 0 0" }}>HIPAA · COFEPRIS · FHIR R4 · GDPR · NOM-024 · End-to-end auditability</p>
-                    </div>
-                    <div style={{ background: "var(--rose-lt)", border: "1px solid var(--rose)", borderRadius: 10, padding: "8px 14px", fontSize: 11, fontWeight: 700, color: "var(--rose)" }}>⚠ 3 Controls Expiring in 14 days</div>
-                </div>
-            </div>
+    const t = useT();
+    const { data: contractsData, isLoading } = useContracts();
+    const router = useRouter();
+    const { data: clientsData } = useClients();
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 24 }}>
-                {[
-                    { label: "Overall Compliance", value: "88%", delta: "3 controls expiring", warn: true },
-                    { label: "Compliant Controls", value: "5/8", delta: "5 fully passing", warn: false },
-                    { label: "High-Risk Gaps", value: "1", delta: "Pen test overdue", warn: true },
-                    { label: "Frameworks Active", value: "5", delta: "HIPAA, FHIR, COFEPRIS, GDPR, NOM", warn: false },
-                ].map((k) => (
-                    <div key={k.label} style={{ background: "var(--white)", borderRadius: 14, padding: "18px 20px", border: `1px solid ${k.warn ? "var(--rose)" : "var(--line)"}`, boxShadow: "var(--shadow-sm)" }}>
-                        <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 4 }}>{k.label}</div>
-                        <div style={{ fontFamily: "var(--f-display)", fontSize: 28, fontWeight: 700, color: k.warn ? "var(--rose)" : "var(--teal-dk)", lineHeight: 1 }}>{k.value}</div>
-                        <div style={{ fontSize: 10.5, color: "var(--muted)", marginTop: 5 }}>{k.delta}</div>
+    const CONTRACTS = useMemo(() => {
+        const clientMap = new Map((clientsData ?? []).map(c => [c.id, c.name]));
+        return (contractsData ?? []).map(c => {
+            const ccLen = (c.compliance_controls ?? []).length;
+            return {
+                id: c.id,
+                displayId: c.id.slice(0, 8).toUpperCase(),
+                client: (c.client_id && clientMap.get(c.client_id)) ?? "—",
+                type: (c.contract_type ?? "").toUpperCase(),
+                status: (c.status ?? "draft").toLowerCase(),
+                value: Number(c.value ?? 0) > 0 ? formatMoney(Number(c.value)) : "—",
+                valueNum: Number(c.value ?? 0),
+                expiry: formatDate(c.expiry_date),
+                compliance: ccLen >= 3 ? 100 : ccLen >= 2 ? 95 : ccLen >= 1 ? 88 : 70,
+                signedDate: formatDate(c.signed_date),
+            };
+        });
+    }, [contractsData, clientsData]);
+
+    const totalValue = CONTRACTS.reduce((s, c) => s + c.valueNum, 0);
+    const KPI_CARDS = [
+        { label: t("contracts.kpi_active"), value: String(CONTRACTS.filter(c => c.status === "signed").length), delta: `${CONTRACTS.length} total`, positive: true as boolean | null },
+        { label: t("contracts.kpi_compliance"), value: CONTRACTS.length ? `${Math.round(CONTRACTS.reduce((s, c) => s + c.compliance, 0) / CONTRACTS.length)}%` : "—", delta: "controls coverage", positive: true as boolean | null },
+        { label: t("contracts.kpi_review"), value: String(CONTRACTS.filter(c => c.status === "review").length), delta: "awaiting signature", positive: null as boolean | null },
+        { label: t("contracts.kpi_value"), value: formatMoney(totalValue), delta: `${CONTRACTS.length} contracts`, positive: true as boolean | null },
+    ];
+    const filters = useListFilters({
+        searchPlaceholder: t("contracts.search_ph"),
+        statusOptions: Object.entries(STATUS_STYLES).map(([v, s]) => ({ value: v, label: s.label })),
+        sortOptions: [
+            { value: "value_desc", label: t("contracts.sort_value") },
+            { value: "compliance_desc", label: t("contracts.sort_compliance") },
+        ],
+    });
+    const filtered = filterAndSort(CONTRACTS, filters, {
+        searchFields: ["displayId", "client", "type"],
+        statusField: "status",
+        sorters: {
+            value_desc: (a, b) => b.valueNum - a.valueNum,
+            compliance_desc: (a, b) => b.compliance - a.compliance,
+        },
+    });
+    return (
+        <div className="p-6">
+            {/* Header */}
+            <header className="mb-6">
+                <p className="mb-1 text-[11px] font-semibold uppercase tracking-[2px] text-[#ff9f0a]">
+                    {t("contracts.module_tag")}
+                </p>
+                <div className="flex items-end justify-between">
+                    <div>
+                        <h1 className="text-[28px] font-bold tracking-tight text-[#1d1d1f]">
+                            {t("contracts.title")}
+                        </h1>
+                        <p className="mt-0.5 text-[13px] text-[#8e8e93]">
+                            {t("contracts.subtitle")}
+                        </p>
+                    </div>
+                    <div className="flex gap-2">
+                        <button className="btn btn--secondary">{t("page.export")}</button>
+                        <Link href="/contracts/new" className="btn btn--primary">{t("page.new_contract")}</Link>
+                    </div>
+                </div>
+            </header>
+
+            {/* KPI Stats */}
+            <div className="mb-6 grid grid-cols-4 gap-4">
+                {KPI_CARDS.map((kpi) => (
+                    <div key={kpi.label} className="glass-stat">
+                        <p className="mb-1 text-[11px] font-medium text-[#8e8e93]">{kpi.label}</p>
+                        <p className="mb-1 text-[28px] font-bold tracking-tight text-[#1d1d1f]">{kpi.value}</p>
+                        <p className={`text-[11px] ${kpi.positive ? "text-[#30d158]" : kpi.positive === false ? "text-[#ff453a]" : "text-[#8e8e93]"}`}>
+                            {kpi.delta}
+                        </p>
                     </div>
                 ))}
             </div>
 
-            <div style={{ background: "var(--white)", borderRadius: 16, border: "1px solid var(--line)", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
-                <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--line)" }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)" }}>Compliance Controls Register</div>
+            {filters.toolbar}
+
+            {/* Contracts Table */}
+            <div className="glass-card overflow-hidden">
+                <div className="flex items-center justify-between border-b border-black/[0.04] px-5 py-4">
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-[15px] font-semibold text-[#1d1d1f]">{t("contracts.registry")}</h2>
+                        <span className="rounded-full bg-[#ff9f0a]/10 px-2.5 py-1 text-[11px] font-semibold text-[#ff9f0a]">
+                            {filtered.length} contracts
+                        </span>
+                    </div>
                 </div>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+
+                <table className="glass-table">
                     <thead>
-                        <tr style={{ background: "var(--surface)" }}>
-                            {["ID", "Framework", "Control Description", "Status", "Owner", "Last Review", "Next Due", "Risk"].map((h) => (
-                                <th key={h} style={{ padding: "9px 16px", fontSize: 9.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".8px", color: "var(--muted)", textAlign: "left" }}>{h}</th>
-                            ))}
+                        <tr>
+                            <th>{t("contracts.col_id")}</th>
+                            <th>{t("contracts.col_client")}</th>
+                            <th>{t("contracts.col_type")}</th>
+                            <th>{t("contracts.col_status")}</th>
+                            <th>{t("contracts.col_value")}</th>
+                            <th>{t("contracts.col_compliance")}</th>
+                            <th>{t("contracts.col_expiry")}</th>
+                            <th>{t("contracts.col_signed")}</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {CONTROLS.map((c, i) => {
-                            const ss = STATUS_STYLE[c.status];
-                            const rs = RISK_STYLE[c.risk];
+                        {isLoading && filtered.length === 0 && (
+                            <tr><td colSpan={8} className="px-6 py-8"><LoadingSkeleton rows={4} type="text" /></td></tr>
+                        )}
+                        {!isLoading && filtered.length === 0 && (
+                            <tr><td colSpan={8} className="py-12 text-center text-[13px] text-[#8e8e93]">{t("contracts.empty")}</td></tr>
+                        )}
+                        {filtered.map((contract) => {
+                            const status = STATUS_STYLES[contract.status] ?? STATUS_STYLES.draft;
                             return (
-                                <tr key={i} style={{ borderTop: "1px solid var(--line)", background: c.status === "gap" ? "#FFF5F5" : undefined }}>
-                                    <td style={{ padding: "11px 16px", fontFamily: "var(--f-mono)", fontSize: 10.5, color: "var(--muted)" }}>{c.id}</td>
-                                    <td style={{ padding: "11px 16px", fontSize: 11, fontWeight: 600, color: "#7c3aed" }}>{c.framework}</td>
-                                    <td style={{ padding: "11px 16px", fontSize: 12, color: "var(--ink)", fontWeight: 500 }}>{c.control}</td>
-                                    <td style={{ padding: "11px 16px" }}>
-                                        <span style={{ background: ss.bg, color: ss.color, fontSize: 10, fontWeight: 700, padding: "2px 9px", borderRadius: 20 }}>{ss.label}</span>
+                                <tr key={contract.id} className="cursor-pointer" onClick={() => router.push(`/contracts/${contract.id}`)}>
+                                    <td>
+                                        <span className="font-mono text-[12px] font-semibold text-[#ff9f0a]">
+                                            {contract.displayId}
+                                        </span>
                                     </td>
-                                    <td style={{ padding: "11px 16px", fontSize: 12, color: "var(--muted)" }}>{c.owner}</td>
-                                    <td style={{ padding: "11px 16px", fontSize: 11, fontFamily: "var(--f-mono)", color: "var(--muted)" }}>{c.last}</td>
-                                    <td style={{ padding: "11px 16px", fontSize: 11, fontFamily: "var(--f-mono)", color: c.status === "expiring" || c.status === "gap" ? "var(--rose)" : "var(--muted)", fontWeight: c.status === "expiring" ? 700 : 400 }}>{c.next}</td>
-                                    <td style={{ padding: "11px 16px", fontSize: 11, fontWeight: 700, color: rs.color, textTransform: "uppercase" }}>{c.risk}</td>
+                                    <td className="font-semibold text-[#1d1d1f]">{contract.client}</td>
+                                    <td className="text-[#8e8e93]">{contract.type}</td>
+                                    <td>
+                                        <span
+                                            className="inline-block rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                                            style={{ background: status.bg, color: status.text }}
+                                        >
+                                            {status.label}
+                                        </span>
+                                    </td>
+                                    <td className="font-semibold text-[#1d1d1f]">{contract.value}</td>
+                                    <td className="w-32">
+                                        <ComplianceBar score={contract.compliance} />
+                                    </td>
+                                    <td className="text-[#8e8e93]">{contract.expiry}</td>
+                                    <td className="text-[#8e8e93]">{contract.signedDate}</td>
                                 </tr>
                             );
                         })}

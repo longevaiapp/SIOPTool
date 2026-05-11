@@ -5,24 +5,31 @@ interface LoadingSkeletonProps {
     type?: "card" | "table" | "text";
 }
 
-function Pulse({ className }: { className?: string }) {
+function Shimmer({ className }: { className?: string }) {
     return (
-        <div className={cn("animate-pulse rounded-md bg-[var(--line)]", className)} />
+        <div 
+            className={cn(
+                "rounded-lg",
+                "bg-gradient-to-r from-black/[0.04] via-black/[0.08] to-black/[0.04]",
+                "bg-[length:200%_100%] animate-[shimmer_1.5s_ease-in-out_infinite]",
+                className
+            )} 
+        />
     );
 }
 
 export function LoadingSkeleton({ rows = 3, type = "card" }: LoadingSkeletonProps) {
     if (type === "card") {
         return (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
                 {Array.from({ length: rows }).map((_, i) => (
                     <div
                         key={i}
-                        className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--white)] p-4 shadow-[var(--shadow-sm)]"
+                        className="glass-card p-5"
                     >
-                        <Pulse className="mb-3 h-3 w-1/3" />
-                        <Pulse className="mb-3 h-8 w-1/2" />
-                        <Pulse className="h-[3px] w-full" />
+                        <Shimmer className="mb-3 h-3 w-1/3" />
+                        <Shimmer className="mb-2 h-8 w-1/2" />
+                        <Shimmer className="h-3 w-2/3" />
                     </div>
                 ))}
             </div>
@@ -31,16 +38,27 @@ export function LoadingSkeleton({ rows = 3, type = "card" }: LoadingSkeletonProp
 
     if (type === "table") {
         return (
-            <div className="overflow-hidden rounded-[var(--radius)] border border-[var(--line)] bg-[var(--white)] shadow-[var(--shadow-sm)]">
-                <Pulse className="h-10 w-full rounded-none opacity-20" />
+            <div className="glass-card overflow-hidden">
+                <div className="border-b border-black/[0.04] px-6 py-4">
+                    <Shimmer className="h-5 w-1/4" />
+                </div>
+                <div className="bg-black/[0.02] px-6 py-3">
+                    <div className="flex gap-4">
+                        <Shimmer className="h-3 w-16" />
+                        <Shimmer className="h-3 w-20" />
+                        <Shimmer className="h-3 w-14" />
+                        <Shimmer className="h-3 w-18" />
+                    </div>
+                </div>
                 {Array.from({ length: rows }).map((_, i) => (
                     <div
                         key={i}
-                        className="flex gap-4 border-b border-[var(--line)] px-4 py-3"
+                        className="flex gap-4 border-t border-black/[0.04] px-6 py-4"
                     >
-                        <Pulse className="h-4 w-1/4" />
-                        <Pulse className="h-4 w-1/3" />
-                        <Pulse className="h-4 w-1/5" />
+                        <Shimmer className="h-4 w-1/4" />
+                        <Shimmer className="h-4 w-1/5" />
+                        <Shimmer className="h-4 w-16" />
+                        <Shimmer className="h-6 w-20 rounded-full" />
                     </div>
                 ))}
             </div>
@@ -49,9 +67,9 @@ export function LoadingSkeleton({ rows = 3, type = "card" }: LoadingSkeletonProp
 
     // text
     return (
-        <div className="space-y-2">
+        <div className="space-y-3">
             {Array.from({ length: rows }).map((_, i) => (
-                <Pulse key={i} className={cn("h-4", i % 3 === 2 ? "w-2/3" : "w-full")} />
+                <Shimmer key={i} className={cn("h-4", i % 3 === 2 ? "w-2/3" : "w-full")} />
             ))}
         </div>
     );

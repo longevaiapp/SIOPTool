@@ -43,3 +43,9 @@ coverage/
 .pytest_cache/
 htmlcov/
 .mypy_cache/
+
+# Env files (belt-and-suspenders, never commit secrets)
+backend/.env
+frontend/.env
+frontend/.env.local
+frontend/.env.production

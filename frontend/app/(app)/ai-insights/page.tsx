@@ -1,174 +1,370 @@
 "use client";
 
-const INSIGHTS = [
-    {
-        id: "INS-001", priority: "critical" as const, module: "SIOP Engine", ts: "2 min ago",
-        title: "Capacity gap projected in 8 days — team at 84% utilization",
-        body: "Current demand pipeline ($1.68M weighted) requires 5.8 FTE-weeks of additional capacity. Solutions Architect at 92% — primary bottleneck. If no action by Jun 18, 2 projects risk delay cascade.",
-        action: "Open contractor RFQ for Solutions Architect. Estimated cost: $18K. Alternative: defer FHIR Gateway Sprint 8 by 3 weeks.",
-        confidence: 91,
-        tags: ["Capacity", "SIOP", "PMO"],
-    },
-    {
-        id: "INS-002", priority: "critical" as const, module: "Finance", ts: "17 min ago",
-        title: "BioMetrics v2 budget exceeded by 19% — no contingency remaining",
-        body: "Project now at $186K vs $156K approved budget. Root cause: 2 undocumented scope additions (AI model retraining, FHIR R4 integration). CFO approval required before Sprint 7 can start.",
-        action: "Formal change order required. Schedule CFO + PM + Client scope review by Jun 19. Adjust CRM deal value upward.",
-        confidence: 98,
-        tags: ["Finance", "Projects", "Risk"],
-    },
-    {
-        id: "INS-003", priority: "high" as const, module: "CRM", ts: "1h ago",
-        title: "LabCore deal stagnant 12 days — win probability dropped 74→58",
-        body: "Last meaningful activity: Demo completed May 31. No contact in 12 days. AI model detects deal velocity pattern consistent with competitive displacement (78% historical match). Decision maker silent.",
-        action: "CEO-level executive outreach recommended within 48h. Prepare competitive differentiation deck and timeline incentive.",
-        confidence: 78,
-        tags: ["CRM", "Sales", "Risk"],
-    },
-    {
-        id: "INS-004", priority: "high" as const, module: "Compliance", ts: "3h ago",
-        title: "3 compliance controls expiring within 14 days",
-        body: "HIPAA-03 (Audit Log Review): expires Jun 18. GDPR-01 (DPA — EU clients): expires Jun 30. SEC-01 (Annual pen test): overdue since Jun 2023.",
-        action: "Compliance Lead + CTO: schedule review by Jun 15. SEC-01 pen test vendor selection required immediately.",
-        confidence: 100,
-        tags: ["Compliance", "HIPAA", "GDPR"],
-    },
-    {
-        id: "INS-005", priority: "medium" as const, module: "Projects", ts: "6h ago",
-        title: "FHIR Gateway P1 blocker unresolved 3 days — client dependency",
-        body: "Blocker B-052: Hospita Group client-side API endpoint returning 401 errors. Blocking Sprint 7 acceptance. PM has sent 2 follow-ups. No response from Hospita IT.",
-        action: "Escalate to Hospita PM Director. Set 48h SLA deadline. If unresolved, activate workaround: mock endpoint for internal testing.",
-        confidence: 85,
-        tags: ["Projects", "PMO", "Client"],
-    },
-    {
-        id: "INS-006", priority: "opportunity" as const, module: "CRM", ts: "Yesterday",
-        title: "GenomicsCo expansion opportunity detected — Phase 2 signal",
-        body: "AI model detected cross-sell pattern: 3 conversations about genomic variant annotation (outside current project scope). GenomicsCo PM asked about ML pipeline extension in last 2 check-ins.",
-        action: "Prepare Phase 2 expansion proposal ($180K–$240K). Target: present at next QBR (Jun 25).",
-        confidence: 73,
-        tags: ["CRM", "Upsell", "Opportunity"],
-    },
-    {
-        id: "INS-007", priority: "opportunity" as const, module: "Customer Health", ts: "2 days ago",
-        title: "LabCore NPS spike to 72 — referral opportunity window open",
-        body: "Post-Sprint 3 demo NPS jumped from 58 to 72. Client expressed strong satisfaction in async follow-up. Historical pattern: 68% of clients with NPS >70 provide referrals when asked within 14 days.",
-        action: "Send referral request to LabCore PM this week. Provide referral incentive deck. Target: 1 qualified intro by Jun 30.",
-        confidence: 68,
-        tags: ["Customer Health", "Growth"],
-    },
-];
+import { useState, useMemo } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { mutate as globalMutate } from "swr";
+import { useInsights, useDeals, useProjects, useClients } from "@/lib/hooks/use-resources";
+import { insightsDecide } from "@/lib/api";
+import { useToast } from "@/components/shared/ToastProvider";
+import { useT } from "@/lib/i18n";
 
-const PRIO_STYLE = {
-    critical: { bg: "var(--rose)", color: "#fff", label: "CRITICAL" },
-    high: { bg: "var(--amber)", color: "var(--ink)", label: "HIGH" },
-    medium: { bg: "var(--blue)", color: "#fff", label: "MEDIUM" },
-    opportunity: { bg: "var(--teal)", color: "var(--ink)", label: "OPPORTUNITY" },
+/* ✨ AI INSIGHTS — live data */
+
+type ActionStatus = "pending" | "applied" | "dismissed" | "snoozed";
+type Severity = "critical" | "warning" | "info" | "success";
+
+interface Insight {
+    id: string;
+    severity: Severity;
+    module: string;
+    module_color: string;
+    title: string;
+    detail: string;
+    suggested_action: string;
+    related_entity?: { type: "deal" | "project" | "client"; id: string };
+    created_at: string;
+    status: ActionStatus;
+    approval_id?: string;
+    dismiss_reason?: string;
+}
+
+const MODULE_COLORS: Record<string, string> = {
+    crm: "#0a84ff", CRM: "#0a84ff",
+    rfq: "#16a34a", RFQ: "#16a34a",
+    contracts: "#7c3aed", Contracts: "#7c3aed", Compliance: "#7c3aed",
+    pm: "#ea580c", PM: "#ea580c", Projects: "#ea580c",
+    pmo: "#0d9488", PMO: "#0d9488",
+    health: "#e11d48", "Customer Health": "#e11d48",
+    portal: "#d97706",
+    suppliers: "#4f46e5", Suppliers: "#4f46e5",
+    siop: "#0891b2", SIOP: "#0891b2",
+    analytics: "#475569",
 };
 
-const TAG_COLORS: Record<string, { bg: string; color: string }> = {
-    SIOP: { bg: "#E0F2FE", color: "#0C4A6E" }, CRM: { bg: "#DBEAFE", color: "#1D4ED8" },
-    Finance: { bg: "#FEF3C7", color: "#92400E" }, Compliance: { bg: "#EDE9FE", color: "#5B21B6" },
-    Projects: { bg: "var(--teal-lt)", color: "var(--teal-dk)" }, PMO: { bg: "#F0FDF4", color: "#166534" },
-    Sales: { bg: "#FFF7ED", color: "#C2410C" }, Risk: { bg: "var(--rose-lt)", color: "var(--rose)" },
-    HIPAA: { bg: "#EDE9FE", color: "#5B21B6" }, GDPR: { bg: "#EDE9FE", color: "#5B21B6" },
-    Client: { bg: "#F3F4F6", color: "#374151" }, Upsell: { bg: "var(--sage-lt)", color: "var(--sage)" },
-    Opportunity: { bg: "var(--teal-lt)", color: "var(--teal-dk)" }, Growth: { bg: "var(--teal-lt)", color: "var(--teal-dk)" },
-    Capacity: { bg: "#FEF3C7", color: "#92400E" },
+const normSeverity = (s: string | null | undefined): Severity => {
+    const v = (s ?? "info").toLowerCase();
+    if (v === "critical" || v === "warning" || v === "info" || v === "success") return v;
+    if (v === "high") return "critical";
+    if (v === "medium" || v === "med") return "warning";
+    if (v === "low") return "info";
+    return "info";
 };
 
 export default function AIInsightsPage() {
+    const t = useT();
+    const [filter, setFilter] = useState<"all" | Severity>("all");
+    const [selected, setSelected] = useState<Insight | null>(null);
+    const [busyId, setBusyId] = useState<string | null>(null);
+
+    const { data: rawInsights, mutate } = useInsights();
+    const { data: dealsData } = useDeals();
+    const { data: projectsData } = useProjects();
+    const { data: clientsData } = useClients();
+    const router = useRouter();
+    const { toast } = useToast();
+
+    const INSIGHTS: Insight[] = useMemo(() => (rawInsights ?? []).map(i => {
+        const moduleKey = i.module ?? "";
+        const payload = (i.payload ?? {}) as Record<string, unknown>;
+        const detail = i.description ?? (typeof payload.detail === "string" ? payload.detail : "");
+        const suggested = typeof payload.suggested_action === "string" ? payload.suggested_action : (typeof payload.recommendation === "string" ? payload.recommendation : "Review and decide");
+        const relType = (i.related_entity_type ?? "").toLowerCase();
+        const relId = i.related_entity_id ?? "";
+        const related = relId && (relType === "deal" || relType === "project" || relType === "client")
+            ? { type: relType as "deal" | "project" | "client", id: relId }
+            : undefined;
+        let status: ActionStatus = "pending";
+        if (i.acknowledged) {
+            if (typeof payload.applied_at === "string") status = "applied";
+            else if (typeof payload.dismissed_at === "string") status = "dismissed";
+            else status = "dismissed";
+        }
+        return {
+            id: i.id,
+            severity: normSeverity(i.severity),
+            module: moduleKey,
+            module_color: MODULE_COLORS[moduleKey] ?? "#5856d6",
+            title: i.title,
+            detail,
+            suggested_action: suggested,
+            related_entity: related,
+            created_at: i.created_at,
+            status,
+            approval_id: typeof payload.approval_id === "string" ? payload.approval_id : undefined,
+            dismiss_reason: typeof payload.dismiss_reason === "string" ? payload.dismiss_reason : undefined,
+        };
+    }), [rawInsights]);
+
+    const dealMap = useMemo(() => new Map((dealsData ?? []).map(d => [d.id, d])), [dealsData]);
+    const projectMap = useMemo(() => new Map((projectsData ?? []).map(p => [p.id, p])), [projectsData]);
+    const clientMap = useMemo(() => new Map((clientsData ?? []).map(c => [c.id, c])), [clientsData]);
+
+    const visible = filter === "all" ? INSIGHTS : INSIGHTS.filter(i => i.severity === filter);
+
+    async function applyInsight(insight: Insight) {
+        setBusyId(insight.id);
+        try {
+            const res = await insightsDecide.apply(insight.id);
+            await mutate();
+            globalMutate("/approvals");
+            globalMutate("/audit-log/summary");
+            setSelected(null);
+            toast({
+                title: "Approval created",
+                description: "AI recommendation routed for human decision.",
+                variant: "success",
+            });
+            router.push("/approvals");
+            return res;
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : "Apply failed";
+            toast({ title: "Apply failed", description: msg, variant: "error" });
+        } finally {
+            setBusyId(null);
+        }
+    }
+
+    async function dismissInsight(insight: Insight, reason?: string) {
+        setBusyId(insight.id);
+        try {
+            await insightsDecide.dismiss(insight.id, reason ? { reason } : {});
+            await mutate();
+            globalMutate("/audit-log/summary");
+            setSelected(null);
+            toast({ title: "Insight dismissed", variant: "success" });
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : "Dismiss failed";
+            toast({ title: "Dismiss failed", description: msg, variant: "error" });
+        } finally {
+            setBusyId(null);
+        }
+    }
+
     const counts = {
-        critical: INSIGHTS.filter(i => i.priority === "critical").length,
-        high: INSIGHTS.filter(i => i.priority === "high").length,
-        opportunity: INSIGHTS.filter(i => i.priority === "opportunity").length,
-        avgConf: Math.round(INSIGHTS.reduce((a, i) => a + i.confidence, 0) / INSIGHTS.length),
+        critical: INSIGHTS.filter(i => i.severity === "critical").length,
+        warning: INSIGHTS.filter(i => i.severity === "warning").length,
+        info: INSIGHTS.filter(i => i.severity === "info").length,
+        success: INSIGHTS.filter(i => i.severity === "success").length,
     };
+    const applied = INSIGHTS.filter(i => i.status === "applied").length;
 
     return (
-        <div style={{ padding: "28px 32px 60px", background: "var(--surface)", minHeight: "100vh" }}>
-
-            {/* Header */}
-            <div style={{ marginBottom: 26 }}>
-                <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "2px", color: "#7C5CFC", marginBottom: 6 }}>M-11 · Cross-Module Intelligence</div>
-                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
-                    <div>
-                        <h1 style={{ fontFamily: "var(--f-display)", fontSize: 32, fontWeight: 900, color: "var(--ink)", margin: 0 }}>
-                            AI <em style={{ color: "#7C5CFC", fontStyle: "normal" }}>Insights</em>
-                        </h1>
-                        <p style={{ fontSize: 12.5, color: "var(--muted)", margin: "5px 0 0" }}>Anomalies · Predictions · Recommendations · Next best actions · Continuous monitoring</p>
-                    </div>
-                    <button style={{ padding: "8px 16px", borderRadius: 9, border: "none", background: "#7C5CFC", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✦ Ask AI Copilot</button>
+        <div className="p-6">
+            <header className="mb-6 flex items-end justify-between">
+                <div>
+                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-[2px] text-[#5856d6]">{t("insights.title")}</p>
+                    <h1 className="text-[28px] font-bold text-[#1d1d1f]">{t("overview.ai_insights")}</h1>
+                    <p className="mt-0.5 text-[13px] text-[#8e8e93]">{t("insights.subtitle")}</p>
                 </div>
+            </header>
+
+            {/* KPIs */}
+            <div className="mb-6 grid grid-cols-4 gap-4">
+                <KPI label={t("insights.kpi_active")} value={`${INSIGHTS.length}`} sub="across all modules" color="#5856d6" />
+                <KPI label={t("insights.kpi_applied")} value={`${applied}`} sub={INSIGHTS.length ? `${((applied / INSIGHTS.length) * 100).toFixed(0)}% take-up rate` : "—"} color="#30d158" />
+                <KPI label={t("insights.kpi_critical")} value={`${counts.critical}`} sub={t("insights.kpi_critical_hint")} color={counts.critical > 0 ? "#ff453a" : "#30d158"} />
+                <KPI label={t("insights.kpi_confidence")} value="86%" sub={t("insights.kpi_confidence_hint")} color="#0a84ff" />
             </div>
 
-            {/* Summary stats */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 24 }}>
-                {[
-                    { label: "Critical Alerts", value: counts.critical, color: "var(--rose)", bg: "var(--rose-lt)", border: "var(--rose)" },
-                    { label: "High Priority", value: counts.high, color: "var(--amber)", bg: "var(--amber-lt)", border: "var(--amber)" },
-                    { label: "Opportunities", value: counts.opportunity, color: "var(--teal-dk)", bg: "var(--teal-lt)", border: "var(--teal)" },
-                    { label: "Avg Confidence", value: `${counts.avgConf}%`, color: "#7C5CFC", bg: "var(--violet-lt)", border: "#7C5CFC" },
-                ].map((k) => (
-                    <div key={k.label} style={{ background: k.bg, borderRadius: 14, padding: "18px 20px", border: `1.5px solid ${k.border}`, boxShadow: "var(--shadow-sm)" }}>
-                        <div style={{ fontSize: 11, color: "var(--muted)", fontWeight: 500, marginBottom: 4 }}>{k.label}</div>
-                        <div style={{ fontFamily: "var(--f-display)", fontSize: 32, fontWeight: 900, color: k.color, lineHeight: 1 }}>{k.value}</div>
-                    </div>
+            {/* Filter */}
+            <div className="mb-4 flex gap-2">
+                {(["all", "critical", "warning", "info", "success"] as const).map(f => (
+                    <button
+                        key={f}
+                        onClick={() => setFilter(f)}
+                        className={`rounded-full px-4 py-1.5 text-[12px] font-medium capitalize ${
+                            filter === f ? "bg-[#1d1d1f] text-white" : "bg-black/[0.04] text-[#636366] hover:bg-black/[0.06]"
+                        }`}
+                    >
+                        {f} ({f === "all" ? INSIGHTS.length : counts[f]})
+                    </button>
                 ))}
             </div>
 
-            {/* Insight cards */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                {INSIGHTS.map((ins) => {
-                    const p = PRIO_STYLE[ins.priority];
-                    const isAlert = ins.priority === "critical" || ins.priority === "high";
+            {/* List */}
+            <div className="space-y-3">
+                {visible.map(i => {
+                    const status = i.status;
                     return (
-                        <div key={ins.id} style={{ background: "var(--white)", borderRadius: 16, border: `1.5px solid ${isAlert ? (ins.priority === "critical" ? "var(--rose)" : "var(--amber)") : "var(--line)"}`, overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
-                            <div style={{ display: "flex", gap: 0, minHeight: 0 }}>
-                                {/* Accent bar */}
-                                <div style={{ width: 4, flexShrink: 0, background: ins.priority === "critical" ? "var(--rose)" : ins.priority === "high" ? "var(--amber)" : ins.priority === "opportunity" ? "var(--teal)" : "var(--blue)" }} />
-                                <div style={{ flex: 1, padding: "18px 22px" }}>
-                                    <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
-                                        <span style={{ background: p.bg, color: p.color, fontSize: 8.5, fontWeight: 700, padding: "3px 8px", borderRadius: 5, textTransform: "uppercase", letterSpacing: ".8px", flexShrink: 0, marginTop: 2 }}>{p.label}</span>
-                                        <span style={{ fontSize: 10.5, color: "var(--muted)", background: "var(--surface)", padding: "2px 8px", borderRadius: 6, flexShrink: 0 }}>{ins.module}</span>
-                                        <div style={{ flex: 1, fontSize: 15, fontWeight: 700, color: "var(--ink)", lineHeight: 1.3 }}>{ins.title}</div>
-                                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                                                <div style={{ height: 4, width: 50, borderRadius: 999, background: "var(--line)", overflow: "hidden" }}>
-                                                    <div style={{ height: "100%", width: `${ins.confidence}%`, background: "#7C5CFC", borderRadius: 999 }} />
-                                                </div>
-                                                <span style={{ fontSize: 10, color: "#7C5CFC", fontFamily: "var(--f-mono)", fontWeight: 700 }}>{ins.confidence}%</span>
-                                            </div>
-                                            <span style={{ fontFamily: "var(--f-mono)", fontSize: 9.5, color: "var(--muted)" }}>{ins.id}</span>
-                                            <span style={{ fontSize: 10, color: "var(--muted)" }}>{ins.ts}</span>
-                                        </div>
+                        <button
+                            key={i.id}
+                            onClick={() => setSelected(i)}
+                            className={`block w-full rounded-2xl border p-5 text-left backdrop-blur transition-all hover:shadow-lg ${
+                                status !== "pending" ? "border-black/[0.04] bg-black/[0.01] opacity-60" :
+                                i.severity === "critical" ? "border-[#ff453a]/30 bg-[#ff453a]/5" :
+                                i.severity === "warning" ? "border-[#ff9f0a]/30 bg-[#ff9f0a]/5" :
+                                i.severity === "success" ? "border-[#30d158]/30 bg-[#30d158]/5" :
+                                "border-black/[0.06] bg-white/60"
+                            }`}
+                        >
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1">
+                                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                                        <SeverityBadge severity={i.severity} />
+                                        <span className="rounded-full bg-black/[0.05] px-2 py-0.5 text-[10px] font-mono text-[#636366]">{i.id}</span>
+                                        <span className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase" style={{ background: `${i.module_color}15`, color: i.module_color }}>{i.module}</span>
+                                        {status !== "pending" && <StatusPill status={status} />}
                                     </div>
-
-                                    <p style={{ fontSize: 12.5, color: "var(--text)", lineHeight: 1.7, margin: "0 0 10px" }}>{ins.body}</p>
-
-                                    <div style={{ background: isAlert ? (ins.priority === "critical" ? "#FFF5F5" : "#FFFBEB") : "var(--teal-lt)", borderRadius: 8, padding: "8px 12px", marginBottom: 12, fontSize: 12, color: "var(--ink)", lineHeight: 1.5 }}>
-                                        <strong style={{ fontSize: 9.5, textTransform: "uppercase", letterSpacing: ".8px", color: "var(--muted)", display: "block", marginBottom: 3 }}>Recommended Action</strong>
-                                        {ins.action}
-                                    </div>
-
-                                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                        {ins.tags.map((t) => {
-                                            const ts = TAG_COLORS[t] ?? { bg: "#F3F4F6", color: "#374151" };
-                                            return (
-                                                <span key={t} style={{ background: ts.bg, color: ts.color, fontSize: 9.5, fontWeight: 600, padding: "2px 8px", borderRadius: 6 }}>{t}</span>
-                                            );
-                                        })}
-                                        <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-                                            <button style={{ padding: "5px 12px", borderRadius: 7, border: "1.5px solid var(--line)", background: "none", fontSize: 11, color: "var(--muted)", cursor: "pointer" }}>Dismiss</button>
-                                            <button style={{ padding: "5px 12px", borderRadius: 7, border: "none", background: "var(--ink)", color: "#fff", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Act Now →</button>
-                                        </div>
-                                    </div>
+                                    <h3 className="text-[14px] font-semibold text-[#1d1d1f]">{i.title}</h3>
+                                    <p className="mt-1 text-[12px] text-[#636366]">{i.detail}</p>
+                                    <p className="mt-2 text-[11px] text-[#8e8e93]">
+                                        💡 <span className="font-semibold text-[#1d1d1f]">{i.suggested_action}</span>
+                                    </p>
                                 </div>
+                                <span className="text-[#8e8e93]">→</span>
                             </div>
-                        </div>
+                        </button>
                     );
                 })}
             </div>
+
+            {/* Detail modal */}
+            {selected && <InsightDetail insight={selected} status={selected.status} busy={busyId === selected.id} onClose={() => setSelected(null)} onApply={applyInsight} onDismiss={dismissInsight} dealMap={dealMap} projectMap={projectMap} clientMap={clientMap} />}
+        </div>
+    );
+}
+
+function InsightDetail({ insight, status, busy, onClose, onApply, onDismiss, dealMap, projectMap, clientMap }: {
+    insight: Insight;
+    status: ActionStatus;
+    busy: boolean;
+    onClose: () => void;
+    onApply: (insight: Insight) => Promise<unknown>;
+    onDismiss: (insight: Insight, reason?: string) => Promise<void>;
+    dealMap: Map<string, { name?: string; title?: string }>;
+    projectMap: Map<string, { name?: string }>;
+    clientMap: Map<string, { name?: string }>;
+}) {
+    const related = insight.related_entity;
+    const entity = related?.type === "deal" ? dealMap.get(related.id) :
+                   related?.type === "project" ? projectMap.get(related.id) :
+                   related?.type === "client" ? clientMap.get(related.id) : null;
+
+    const entityHref = related?.type === "deal" ? `/crm/${related.id}` :
+                       related?.type === "project" ? `/pm-tab/${related.id}` :
+                       related?.type === "client" ? `/customer-health/${related.id}` : null;
+
+    return (
+        <div onClick={onClose} className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 backdrop-blur-sm">
+            <div onClick={e => e.stopPropagation()} className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
+                <div className="mb-4 flex items-start justify-between">
+                    <div className="flex-1">
+                        <div className="mb-2 flex flex-wrap gap-2">
+                            <SeverityBadge severity={insight.severity} />
+                            <span className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase" style={{ background: `${insight.module_color}15`, color: insight.module_color }}>{insight.module}</span>
+                        </div>
+                        <h2 className="text-[20px] font-bold text-[#1d1d1f]">{insight.title}</h2>
+                    </div>
+                    <button onClick={onClose} className="text-[20px] text-[#8e8e93]">✕</button>
+                </div>
+
+                {/* Detail */}
+                <div className="mb-4 rounded-xl bg-black/[0.02] p-4">
+                    <p className="mb-2 text-[10px] font-semibold uppercase text-[#8e8e93]">{t("insights.why_flagged")}</p>
+                    <p className="text-[13px] text-[#1d1d1f]">{insight.detail}</p>
+                </div>
+
+                {/* Recommended action */}
+                <div className="mb-4 rounded-xl border border-[#5856d6]/20 bg-[#5856d6]/5 p-4">
+                    <p className="mb-1 text-[10px] font-semibold uppercase text-[#5856d6]">{t("insights.recommended_action")}</p>
+                    <p className="text-[14px] font-semibold text-[#1d1d1f]">{insight.suggested_action}</p>
+                </div>
+
+                {/* Evidence / related */}
+                {entity && entityHref && (
+                    <div className="mb-4 rounded-xl border border-black/[0.06] p-4">
+                        <p className="mb-2 text-[10px] font-semibold uppercase text-[#8e8e93]">{t("insights.related")}</p>
+                        <Link href={entityHref} onClick={onClose} className="flex items-center justify-between rounded-lg p-2 hover:bg-black/[0.03]">
+                            <div>
+                                <p className="text-[13px] font-semibold text-[#1d1d1f]">{(entity as { name?: string; title?: string }).name ?? (entity as { title?: string }).title ?? "Record"}</p>
+                                <p className="text-[11px] text-[#8e8e93] capitalize">{related!.type}</p>
+                            </div>
+                            <span className="text-[12px] font-semibold text-[#5856d6]">View →</span>
+                        </Link>
+                    </div>
+                )}
+
+                {/* Confidence + meta */}
+                <div className="mb-4 grid grid-cols-3 gap-3 text-[11px]">
+                    <Meta label="Confidence" value="86%" />
+                    <Meta label="Generated" value={new Date(insight.created_at).toLocaleString()} />
+                    <Meta label="Status" value={status} />
+                </div>
+
+                {/* Actions */}
+                {status === "pending" ? (
+                    <div className="flex justify-end gap-2 border-t border-black/[0.04] pt-4">
+                        <button
+                            onClick={() => onDismiss(insight)}
+                            disabled={busy}
+                            className="rounded-xl border border-[#ff453a]/30 bg-white px-4 py-2 text-[13px] font-semibold text-[#ff453a] hover:bg-[#ff453a]/5 disabled:opacity-50"
+                        >
+                            {t("insights.dismiss")}
+                        </button>
+                        <button
+                            onClick={() => onApply(insight)}
+                            disabled={busy}
+                            className="rounded-xl bg-gradient-to-br from-[#5856d6] to-[#bf5af2] px-5 py-2 text-[13px] font-semibold text-white shadow-lg disabled:opacity-50"
+                        >
+                            {busy ? t("insights.submitting") : t("insights.apply")}
+                        </button>
+                    </div>
+                ) : (
+                    <div className="rounded-xl bg-black/[0.02] p-3 text-center text-[12px] text-[#636366]">
+                        This insight was <span className="font-semibold capitalize">{status}</span>.
+                        {status === "applied" && insight.approval_id && (
+                            <Link href="/approvals" onClick={onClose} className="ml-2 text-[#5856d6] hover:underline">
+                                View approval →
+                            </Link>
+                        )}
+                        {status === "dismissed" && insight.dismiss_reason && (
+                            <span className="ml-2">Reason: “{insight.dismiss_reason}”</span>
+                        )}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function Meta({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="rounded-lg bg-black/[0.02] p-2">
+            <p className="text-[9px] uppercase text-[#8e8e93]">{label}</p>
+            <p className="mt-0.5 font-semibold text-[#1d1d1f] capitalize">{value}</p>
+        </div>
+    );
+}
+
+function SeverityBadge({ severity }: { severity: string }) {
+    const map: Record<string, { bg: string; color: string; icon: string }> = {
+        critical: { bg: "rgba(255, 69, 58, 0.15)", color: "#ff453a", icon: "🔴" },
+        warning: { bg: "rgba(255, 159, 10, 0.15)", color: "#c93400", icon: "🟡" },
+        info: { bg: "rgba(10, 132, 255, 0.15)", color: "#0040dd", icon: "🔵" },
+        success: { bg: "rgba(48, 209, 88, 0.15)", color: "#248a3d", icon: "🟢" },
+    };
+    const s = map[severity] ?? map.info;
+    return <span className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase" style={{ background: s.bg, color: s.color }}>{s.icon} {severity}</span>;
+}
+
+function StatusPill({ status }: { status: ActionStatus }) {
+    const map: Record<ActionStatus, { bg: string; color: string }> = {
+        pending: { bg: "#f5f5f7", color: "#636366" },
+        applied: { bg: "rgba(48, 209, 88, 0.15)", color: "#248a3d" },
+        dismissed: { bg: "rgba(255, 69, 58, 0.15)", color: "#ff453a" },
+        snoozed: { bg: "rgba(142, 142, 147, 0.15)", color: "#636366" },
+    };
+    const s = map[status];
+    return <span className="rounded-full px-2 py-0.5 text-[9px] font-bold uppercase" style={{ background: s.bg, color: s.color }}>{status}</span>;
+}
+
+function KPI({ label, value, sub, color }: { label: string; value: string; sub: string; color: string }) {
+    return (
+        <div className="rounded-2xl border border-black/[0.06] bg-white/60 p-4 backdrop-blur">
+            <p className="mb-1 text-[11px] font-medium text-[#8e8e93]">{label}</p>
+            <p className="mb-1 text-[26px] font-bold tracking-tight" style={{ color }}>{value}</p>
+            <p className="text-[11px] text-[#8e8e93]">{sub}</p>
         </div>
     );
 }

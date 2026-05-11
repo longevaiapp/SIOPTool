@@ -1,51 +1,117 @@
 :root {
-    /* ── Colours ─────────────────────────────────────────────── */
-    --ink: #080C18;
-    --ink2: #0F1525;
-    --ink3: #18213A;
-    --ink4: #1F2D4A;
-    --surface: #F4F6FA;
-    --white: #FFFFFF;
-    --text: #1A2540;
-    --muted: #5A6A8A;
-    --line: #E1E8F5;
-    --line-dk: rgba(255, 255, 255, 0.07);
+    /* ══════════════════════════════════════════════════════════════
+       🍎 TRUE LIQUID GLASS — iOS 26 / visionOS Floating Panel Style
+       ══════════════════════════════════════════════════════════════ */
 
-    --teal: #00BFA5;
-    --teal-dk: #008F7A;
-    --teal-lt: #D6F5EF;
-    --teal-glow: rgba(0, 191, 165, 0.18);
+    /* ── Base Colors ─────────────────────────────────────────── */
+    --ink: #1c1c1e;
+    --ink2: #2c2c2e;
+    --ink3: #3a3a3c;
+    --surface: #f2f2f7;
+    --white: #ffffff;
+    --text: #1d1d1f;
+    --text-secondary: #8e8e93;
+    --muted: #636366;
+    --line: rgba(60, 60, 67, 0.12);
+    --line-dk: rgba(255, 255, 255, 0.15);
 
-    --amber: #F5A623;
-    --amber-lt: #FEF3DC;
+    /* ── Accent Colors (Apple HIG) ───────────────────────────── */
+    --green: #30d158;
+    --green-lt: rgba(48, 209, 88, 0.15);
+    --green-glow: rgba(48, 209, 88, 0.4);
 
-    --rose: #F0415A;
-    --rose-lt: #FEE8EC;
+    --orange: #ff9f0a;
+    --orange-lt: rgba(255, 159, 10, 0.15);
 
-    --violet: #7C5CFC;
-    --violet-lt: #EEE9FF;
+    --red: #ff453a;
+    --red-lt: rgba(255, 69, 58, 0.15);
 
-    --blue: #2563EB;
-    --blue-lt: #DBEAFE;
+    --purple: #bf5af2;
+    --purple-lt: rgba(191, 90, 242, 0.15);
 
-    --sage: #2A7A5A;
-    --sage-lt: #D4EDDD;
+    --blue: #007aff;
+    --blue-lt: rgba(0, 122, 255, 0.15);
+
+    --cyan: #5ac8fa;
+    --cyan-lt: rgba(90, 200, 250, 0.15);
+
+    --yellow: #ffcc00;
+    --yellow-lt: rgba(255, 204, 0, 0.15);
+
+    --pink: #ff2d55;
+    --pink-lt: rgba(255, 45, 85, 0.15);
+
+    --teal: #64d2ff;
+    --indigo: #5856d6;
 
     /* ── Typography ──────────────────────────────────────────── */
-    --f-display: 'Fraunces', serif;
-    --f-ui: 'Geist', sans-serif;
-    --f-mono: 'Geist Mono', monospace;
+    --f-display: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    --f-ui: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    --f-mono: 'SF Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
 
     /* ── Layout ──────────────────────────────────────────────── */
-    --sidebar-w: 248px;
-    --topbar-h: 58px;
-    --radius: 14px;
-    --radius-sm: 9px;
+    --sidebar-w: 240px;
+    --topbar-h: 56px;
+    --radius: 16px;
+    --radius-lg: 24px;
+    --radius-xl: 32px;
+    --radius-sm: 10px;
+    --radius-xs: 6px;
 
-    /* ── Shadows ─────────────────────────────────────────────── */
-    --shadow-sm: 0 1px 4px rgba(8, 12, 24, 0.08);
-    --shadow: 0 4px 20px rgba(8, 12, 24, 0.10);
-    --shadow-lg: 0 12px 40px rgba(8, 12, 24, 0.14);
+    /* ══════════════════════════════════════════════════════════════
+       🪟 TRUE LIQUID GLASS SYSTEM
+       ══════════════════════════════════════════════════════════════ */
+
+    /* Floating Panel (main content area) */
+    --panel-bg: rgba(255, 255, 255, 0.75);
+    --panel-border: rgba(255, 255, 255, 0.5);
+    --panel-blur: 60px;
+    --panel-shadow: 
+        0 0 0 1px rgba(255, 255, 255, 0.3),
+        0 2px 4px rgba(0, 0, 0, 0.02),
+        0 4px 8px rgba(0, 0, 0, 0.02),
+        0 8px 16px rgba(0, 0, 0, 0.02),
+        0 16px 32px rgba(0, 0, 0, 0.03),
+        0 32px 64px rgba(0, 0, 0, 0.04);
+
+    /* Glass Card (items inside panel) */
+    --card-bg: rgba(255, 255, 255, 0.5);
+    --card-bg-hover: rgba(255, 255, 255, 0.7);
+    --card-border: rgba(255, 255, 255, 0.6);
+    --card-border-outer: rgba(0, 0, 0, 0.04);
+    --card-blur: 20px;
+    --card-shadow: 
+        0 0 0 1px rgba(255, 255, 255, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8),
+        0 1px 2px rgba(0, 0, 0, 0.03),
+        0 2px 8px rgba(0, 0, 0, 0.04);
+    --card-shadow-hover:
+        0 0 0 1px rgba(255, 255, 255, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        0 4px 12px rgba(0, 0, 0, 0.06),
+        0 8px 24px rgba(0, 0, 0, 0.04);
+
+    /* Dark Glass (sidebar, tooltips) */
+    --dark-bg: rgba(30, 30, 32, 0.85);
+    --dark-border: rgba(255, 255, 255, 0.08);
+    --dark-blur: 50px;
+
+    /* Inner highlights */
+    --inner-glow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    --inner-glow-strong: inset 0 1px 1px rgba(255, 255, 255, 0.8);
+    --inner-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.03);
+
+    /* ── Module Colors ───────────────────────────────────────── */
+    --m01: #007aff;   /* CRM - Blue */
+    --m02: #30d158;   /* RFQ - Green */
+    --m03: #ff9f0a;   /* Contracts - Orange */
+    --m04: #ff453a;   /* Projects - Red */
+    --m05: #bf5af2;   /* PMO - Purple */
+    --m06: #ff2d55;   /* Health - Pink */
+    --m07: #5856d6;   /* Portal - Indigo */
+    --m08: #64d2ff;   /* Suppliers - Cyan */
+    --m09: #30b0c7;   /* SIOP - Teal */
+    --m10: #8e8e93;   /* Analytics - Gray */
 
     /* ── Spacing ─────────────────────────────────────────────── */
     --space-1: 4px;
@@ -57,29 +123,12 @@
     --space-8: 32px;
     --space-10: 40px;
     --space-12: 48px;
-    --space-16: 64px;
 
-    /* ── Module Brand Colours ────────────────────────────────── */
-    /* M01 CRM */
-    --m01: #2563EB;
-    /* M02 RFQ */
-    --m02: #16A34A;
-    /* M03 Contracts */
-    --m03: #7C3AED;
-    /* M04 PM */
-    --m04: #EA580C;
-    /* M05 PMO */
-    --m05: #0D9488;
-    /* M06 Health */
-    --m06: #E11D48;
-    /* M07 Portal */
-    --m07: #D97706;
-    /* M08 Suppliers */
-    --m08: #4F46E5;
-    /* M09 SIOP */
-    --m09: #0891B2;
-    /* M10 Analytics */
-    --m10: #475569;
-    /* Infrastructure */
-    --m-infra: #64748B;
+    /* ── Animation ───────────────────────────────────────────── */
+    --duration-fast: 150ms;
+    --duration-normal: 250ms;
+    --duration-slow: 400ms;
+    --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }

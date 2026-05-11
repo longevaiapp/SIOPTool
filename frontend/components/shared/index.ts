@@ -9,3 +9,8 @@ export { DataTable } from "./DataTable";
 export type { TableColumn } from "./DataTable";
 export { ModuleHeader } from "./ModuleHeader";
 export { LoadingSkeleton } from "./LoadingSkeleton";
+export { GeneratePdfButton } from "./GeneratePdfButton";
+export { GeneratePdfMenu } from "./GeneratePdfMenu";
+export type { PdfKindOption } from "./GeneratePdfMenu";
+export { CopilotPanel } from "./CopilotPanel";
+export { NotificationBell } from "./NotificationBell";
