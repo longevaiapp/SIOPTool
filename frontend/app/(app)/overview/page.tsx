@@ -211,7 +211,7 @@ export default function OverviewPage() {
                         <div className="divide-y divide-black/[0.04]">
                             {(deals ?? []).slice(0, 4).map((deal) => (
                                 <Link key={deal.id} href={`/crm/${deal.id}`} className="flex items-center gap-4 px-6 py-4 hover:bg-black/[0.02]">
-                                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[#0a84ff] text-[12px] font-bold text-white">
+                                    <div translate="no" className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[#0a84ff] text-[12px] font-bold text-white">
                                         {(deal.client_name ?? "?").slice(0, 2).toUpperCase()}
                                     </div>
                                     <div className="flex-1">
@@ -234,17 +234,17 @@ export default function OverviewPage() {
                         </div>
                         <div className="mt-6 grid grid-cols-3 gap-4 text-center">
                             <div>
-                                <p className="text-[20px] font-bold text-[#0a84ff]">S</p>
+                                <p className="text-[20px] font-bold text-[#0a84ff]" translate="no">S</p>
                                 <p className="text-[10px] text-[#86868b]">{t("overview.demand")}</p>
                                 <p className="text-[14px] font-semibold text-[#1d1d1f]">{Math.min(100, (deals ?? []).length * 10)}</p>
                             </div>
                             <div>
-                                <p className="text-[20px] font-bold text-[#ff9f0a]">I</p>
+                                <p className="text-[20px] font-bold text-[#ff9f0a]" translate="no">I</p>
                                 <p className="text-[10px] text-[#86868b]">{t("overview.capacity")}</p>
                                 <p className="text-[14px] font-semibold text-[#1d1d1f]">{100 - utilization + 50}</p>
                             </div>
                             <div>
-                                <p className="text-[20px] font-bold text-[#30d158]">OP</p>
+                                <p className="text-[20px] font-bold text-[#30d158]" translate="no">OP</p>
                                 <p className="text-[10px] text-[#86868b]">{t("overview.operations")}</p>
                                 <p className="text-[14px] font-semibold text-[#1d1d1f]">{avgHealth}</p>
                             </div>

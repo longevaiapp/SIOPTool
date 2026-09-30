@@ -112,7 +112,7 @@ export default function DealDetailPage() {
             <div className="glass-card mb-6 p-6">
                 <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-4">
-                        <div
+                        <div translate="no"
                             className="flex h-14 w-14 items-center justify-center rounded-2xl text-[20px] font-bold text-white"
                             style={{ background: `linear-gradient(135deg, ${client?.logo_color}, ${client?.logo_color}aa)` }}
                         >

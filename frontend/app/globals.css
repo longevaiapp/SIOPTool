@@ -3,3 +3,25 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* ── Google Translate fallback (components/shared/GoogleTranslate.tsx) ──
+   Hide Google's toolbar, tooltips, spinner and hover highlights so the
+   translation looks native. Class names cover the old and current widget. */
+.goog-te-banner-frame,
+.skiptranslate > iframe,
+iframe.skiptranslate,
+#goog-gt-tt,
+.goog-te-balloon-frame,
+.goog-tooltip,
+.VIpgJd-ZVi9od-ORHb-OEVmcd,
+.VIpgJd-ZVi9od-aZ2wEe-wOHMyf,
+.VIpgJd-yAWNEb-L7lbkb {
+    display: none !important;
+}
+body {
+    top: 0 !important;
+}
+.goog-text-highlight,
+.VIpgJd-yAWNEb-VIpgJd-fmcmS-sn54Q {
+    background: none !important;
+    box-shadow: none !important;
+}

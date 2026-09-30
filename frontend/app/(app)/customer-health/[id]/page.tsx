@@ -57,7 +57,7 @@ export default function ClientHealthDetailPage() {
             <div className="glass-card mb-6 p-6">
                 <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-4">
-                        <div
+                        <div translate="no"
                             className="flex h-16 w-16 items-center justify-center rounded-2xl text-[24px] font-bold text-white"
                             style={{ background: `linear-gradient(135deg, ${client.logo_color}, ${client.logo_color}aa)` }}
                         >
@@ -278,7 +278,7 @@ export default function ClientHealthDetailPage() {
                             <h3 className="mb-4 text-[14px] font-semibold text-[#1d1d1f]">{t("ch_d.h_contact")}</h3>
                             <div className="rounded-xl border border-black/[0.06] p-4">
                                 <div className="flex items-center gap-3">
-                                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#e11d48] to-[#ff9f0a] text-[14px] font-bold text-white">
+                                    <div translate="no" className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#e11d48] to-[#ff9f0a] text-[14px] font-bold text-white">
                                         {client.contact_name.split(" ").map(n => n[0]).join("")}
                                     </div>
                                     <div>

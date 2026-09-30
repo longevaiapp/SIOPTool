@@ -51,7 +51,7 @@ function OwnerAvatar({ initials }: { initials: string }) {
     const [start, end] = colors[initials] ?? ["#8e8e93", "#636366"];
 
     return (
-        <div
+        <div translate="no"
             className="avatar avatar--sm"
             style={{ "--avatar-start": start, "--avatar-end": end } as React.CSSProperties}
         >

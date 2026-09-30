@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import "./globals.css";
 import { ToastProvider } from "@/components/shared/ToastProvider";
+import { GoogleTranslate } from "@/components/shared/GoogleTranslate";
 import { I18nProvider, type Locale } from "@/lib/i18n";
 
 export const metadata: Metadata = {
@@ -25,6 +26,8 @@ export default async function RootLayout({
             <body>
                 <I18nProvider initialLocale={initialLocale}>
                     <ToastProvider>{children}</ToastProvider>
+                    {/* Free Google Translate covers whatever the dictionary doesn't (DB data, hard-coded text). */}
+                    {initialLocale === "en" && <GoogleTranslate />}
                 </I18nProvider>
             </body>
         </html>

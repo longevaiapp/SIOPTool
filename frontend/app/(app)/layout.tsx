@@ -120,11 +120,11 @@ function Sidebar({ user, onLogout }: { user: User | null; onLogout: () => void }
                     <span className="text-[15px] font-bold text-white">L</span>
                 </div>
                 <div>
-                    <p className="text-[14px] font-semibold text-white">
+                    <p className="text-[14px] font-semibold text-white" translate="no">
                         Longe<span className="text-[#5ac8fa]">vAI</span>
                     </p>
                     <p className="text-[9px] font-medium uppercase tracking-[1px] text-white/40">
-                        AIaaS · Juntify Platform
+                        <span translate="no">AIaaS · Juntify</span> Platform
                     </p>
                 </div>
             </div>
@@ -133,7 +133,7 @@ function Sidebar({ user, onLogout }: { user: User | null; onLogout: () => void }
             {user && (
                 <div className="border-b border-white/[0.08] px-4 py-3">
                     <div className="flex items-center gap-2">
-                        <div
+                        <div translate="no"
                             className="flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-bold text-white"
                             style={{ backgroundColor: roleConfig.color }}
                         >
@@ -318,7 +318,7 @@ function Topbar({ moduleName, moduleColor, user }: { moduleName: string; moduleC
                 <LanguageSwitcher />
 
                 {/* Avatar */}
-                <div 
+                <div translate="no" 
                     className="flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-semibold text-white shadow-md"
                     style={{ 
                         background: user 

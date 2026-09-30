@@ -15,6 +15,11 @@
  *   - Client mutations via `setLocale()` write the cookie + update state.
  *   - `useT()` returns a t(key, vars?) function. Missing keys log a warning
  *     in dev and fall back to the key itself (so we never render `undefined`).
+ *   - English is rendered by Google Translate (components/shared/GoogleTranslate)
+ *     so hard-coded strings and DB content get translated too. For that to
+ *     work every string must reach the page in Spanish — Google would otherwise
+ *     re-translate English as if it were Spanish ("Sales" → "Salts"). So t()
+ *     always reads the ES dictionary; `locale` still drives number/date formats.
  */
 "use client";
 
@@ -25,6 +30,9 @@ import { en as EN } from "./dict/en";
 export type Locale = "es" | "en";
 
 const DICTS: Record<Locale, Record<string, string>> = { es: ES, en: EN };
+
+/** Dictionary t() reads from. "es" while Google Translate handles English (see header). */
+const DICT_LOCALE: Locale = "es";
 
 interface I18nContextValue {
     locale: Locale;
@@ -69,7 +77,7 @@ export function I18nProvider({
     }, []);
 
     const t = useCallback<I18nContextValue["t"]>((key, vars) => {
-        const dict = DICTS[locale] ?? DICTS.es;
+        const dict = DICTS[DICT_LOCALE];
         const raw = dict[key];
         if (raw === undefined) {
             // Fallback chain: requested locale → ES → key
@@ -84,7 +92,7 @@ export function I18nProvider({
             return interpolate(fallback, vars);
         }
         return interpolate(raw, vars);
-    }, [locale]);
+    }, []);
 
     const value = useMemo<I18nContextValue>(() => ({ locale, setLocale, t }), [locale, setLocale, t]);
     return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

@@ -29,7 +29,7 @@ export default function LoginPage() {
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#30b0c7] to-[#007aff] shadow-lg shadow-[#007aff]/30">
                     <span className="text-2xl font-bold text-white">L</span>
                 </div>
-                <h1 className="text-2xl font-bold text-[#1d1d1f]">
+                <h1 className="text-2xl font-bold text-[#1d1d1f]" translate="no">
                     Longe<span className="text-[#007aff]">vAI</span>
                 </h1>
                 <p className="mt-1 text-sm text-[#8e8e93]">{t("auth.tagline")}</p>

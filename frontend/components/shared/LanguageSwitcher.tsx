@@ -5,10 +5,12 @@
  *
  * Renders a small icon button; clicking opens a tiny menu with the two
  * supported locales.  The current locale is highlighted.  Persists via the
- * cookie set by `useI18n().setLocale`.
+ * cookie set by `useI18n().setLocale`.  Switching reloads the page so the
+ * Google Translate fallback (see GoogleTranslate.tsx) is loaded or removed.
  */
 import { useEffect, useRef, useState } from "react";
 import { useI18n, type Locale } from "@/lib/i18n";
+import { setGoogleTranslateLocale } from "./GoogleTranslate";
 
 const LOCALE_LABELS: Record<Locale, { flag: string; native: string }> = {
     es: { flag: "🇪🇸", native: "Español" },
@@ -33,7 +35,7 @@ export function LanguageSwitcher() {
     }, [open]);
 
     return (
-        <div ref={menuRef} className="relative">
+        <div ref={menuRef} className="notranslate relative" translate="no">
             <button
                 type="button"
                 onClick={() => setOpen(o => !o)}
@@ -59,7 +61,13 @@ export function LanguageSwitcher() {
                             <button
                                 key={code}
                                 type="button"
-                                onClick={() => { setLocale(code); setOpen(false); }}
+                                onClick={() => {
+                                    setOpen(false);
+                                    if (active) return;
+                                    setLocale(code);
+                                    setGoogleTranslateLocale(code);
+                                    window.location.reload();
+                                }}
                                 className={`flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] transition-colors ${
                                     active ? "bg-[#0a84ff]/10 text-[#0040dd] font-semibold" : "text-[#1d1d1f] hover:bg-black/[0.04]"
                                 }`}

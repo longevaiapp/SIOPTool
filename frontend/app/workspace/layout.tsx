@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
+import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import type { User } from "@/lib/types/user";
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -58,7 +59,7 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
                 <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-3">
                     {/* Brand */}
                     <Link href="/workspace" className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#ff9f0a] to-[#ff453a] text-[14px] font-bold text-white shadow-lg">
+                        <div translate="no" className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#ff9f0a] to-[#ff453a] text-[14px] font-bold text-white shadow-lg">
                             {user.name.split(" ").map(n => n[0]).join("")}
                         </div>
                         <div>
@@ -69,6 +70,7 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
 
                     {/* User */}
                     <div className="flex items-center gap-3">
+                        <LanguageSwitcher />
                         <div className="text-right">
                             <p className="text-[12px] font-semibold text-[#1d1d1f]">{user.name}</p>
                             <p className="text-[10px] text-[#8e8e93]">{user.email}</p>

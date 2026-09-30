@@ -7,7 +7,7 @@ export default function RegisterPage() {
     return (
         <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
             <div className="mb-6 text-center">
-                <h1 className="text-2xl font-bold text-gray-900">LongevAI</h1>
+                <h1 className="text-2xl font-bold text-gray-900" translate="no">LongevAI</h1>
                 <p className="mt-1 text-sm text-gray-500">{t("auth.create_workspace")}</p>
             </div>
 

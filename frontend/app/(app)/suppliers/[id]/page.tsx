@@ -47,7 +47,7 @@ export default function SupplierDetailPage() {
             <div className="glass-card mb-6 p-6">
                 <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4">
-                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl text-[20px] font-bold text-white" style={{ background: "linear-gradient(135deg, #4f46e5, #5856d6)" }}>
+                        <div translate="no" className="flex h-14 w-14 items-center justify-center rounded-2xl text-[20px] font-bold text-white" style={{ background: "linear-gradient(135deg, #4f46e5, #5856d6)" }}>
                             {supplier.name.slice(0, 2).toUpperCase()}
                         </div>
                         <div>
